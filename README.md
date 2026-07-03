@@ -44,8 +44,12 @@ validating rendered output images.
 
 ## Status
 
-Under active construction — see [ROADMAP.md](./ROADMAP.md). Architecture
-rationale in [docs/adr/](./docs/adr/).
+Milestone **M1 — plan schema** complete (`v0.1-schema`): the multimodal
+`GenerationPlan` contract, full field- and cross-field validation, 15 example
+fixtures, and a 30-test suite. Next: **M2 — deterministic cost estimator + budget gate**.
+
+See [ROADMAP.md](./ROADMAP.md) for the full plan and [docs/plan-schema.md](./docs/plan-schema.md)
+for the schema design rationale. Architecture decisions in [docs/adr/](./docs/adr/).
 
 ## Quickstart
 
