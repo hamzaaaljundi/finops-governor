@@ -1,0 +1,34 @@
+{
+  "plan_id": "plan-multi-002",
+  "request_text": "500 variations across two assembly stations",
+  "scenes": [
+    {
+      "scene_id": "station-a",
+      "environment": { "asset_id": "floor-a", "usd_path": "assets/floor.usda", "category": "environment" },
+      "assets": [
+        { "asset_id": "arm-a", "usd_path": "assets/arm.usda", "category": "robot",
+          "transform": { "translation": [0.0, 0.0, 0.0], "rotation": [0.0, 90.0, 0.0], "scale": [1.0, 1.0, 1.0] } },
+        { "asset_id": "conveyor-a", "usd_path": "assets/conveyor.usdc", "category": "fixture" }
+      ],
+      "cameras": [
+        { "camera_id": "cam-top", "transform": { "translation": [0.0, 5.0, 0.0] }, "fov_degrees": 60.0 },
+        { "camera_id": "cam-side", "transform": { "translation": [5.0, 1.5, 0.0] } }
+      ],
+      "variation_count": 300
+    },
+    {
+      "scene_id": "station-b",
+      "environment": { "asset_id": "floor-b", "usd_path": "assets/floor.usda" },
+      "assets": [
+        { "asset_id": "arm-b", "usd_path": "assets/arm.usda", "category": "robot" }
+      ],
+      "cameras": [
+        { "camera_id": "cam-1", "transform": {} }
+      ],
+      "variation_count": 200
+    }
+  ],
+  "modalities": ["RGB", "DEPTH", "SEMANTIC_SEGMENTATION", "INSTANCE_SEGMENTATION", "BBOX_2D"],
+  "render_settings": { "width": 1920, "height": 1080, "samples_per_pixel": 128, "renderer": "PATH_TRACED" },
+  "budget": { "max_usd": 2500.0, "currency": "USD" }
+}

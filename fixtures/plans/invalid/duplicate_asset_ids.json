@@ -1,0 +1,14 @@
+{
+  "plan_id": "bad-dup-asset",
+  "scenes": [
+    { "scene_id": "s1", "environment": { "asset_id": "e1", "usd_path": "e.usda" },
+      "assets": [
+        { "asset_id": "dup", "usd_path": "a.usda" },
+        { "asset_id": "dup", "usd_path": "b.usda" }
+      ],
+      "cameras": [{ "camera_id": "c1", "transform": {} }], "variation_count": 1 }
+  ],
+  "modalities": ["RGB"],
+  "render_settings": { "width": 1280, "height": 720 },
+  "budget": { "max_usd": 50.0 }
+}

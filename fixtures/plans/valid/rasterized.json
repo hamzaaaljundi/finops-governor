@@ -1,0 +1,20 @@
+{
+  "plan_id": "plan-raster-003",
+  "request_text": "Fast rasterized preview batch",
+  "scenes": [
+    {
+      "scene_id": "scene-1",
+      "environment": { "asset_id": "floor", "usd_path": "assets/floor.usda" },
+      "assets": [
+        { "asset_id": "arm", "usd_path": "assets/arm.usda" }
+      ],
+      "cameras": [
+        { "camera_id": "cam-1", "transform": {} }
+      ],
+      "variation_count": 50
+    }
+  ],
+  "modalities": ["RGB", "SEMANTIC_SEGMENTATION"],
+  "render_settings": { "width": 1280, "height": 720, "samples_per_pixel": 1, "renderer": "RASTERIZED" },
+  "budget": { "max_usd": 100.0 }
+}

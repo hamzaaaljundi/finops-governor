@@ -1,0 +1,20 @@
+{
+  "plan_id": "plan-minimal-001",
+  "request_text": "One variation of a robotic arm on an assembly floor",
+  "scenes": [
+    {
+      "scene_id": "scene-1",
+      "environment": { "asset_id": "floor", "usd_path": "assets/floor.usda" },
+      "assets": [
+        { "asset_id": "arm", "usd_path": "assets/arm.usda" }
+      ],
+      "cameras": [
+        { "camera_id": "cam-1", "transform": {} }
+      ],
+      "variation_count": 1
+    }
+  ],
+  "modalities": ["RGB"],
+  "render_settings": { "width": 1280, "height": 720 },
+  "budget": { "max_usd": 50.0 }
+}
