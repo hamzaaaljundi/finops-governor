@@ -1,23 +1,20 @@
-"""Plan schema — full model set (M1, Tasks 1.3–1.5).
+"""Plan schema — full model set (M1, Tasks 1.3–1.5, extended for diversity gating).
 
 Bottom-up construction: leaf value objects first, then the composite Scene, then the
 top-level GenerationPlan that the whole system passes around.
 
 All plan models inherit from StrictModel so unknown fields are rejected rather than
 silently dropped — making the schema a hard boundary between the fuzzy world (the
-LLM planner, M4) and the deterministic world (cost estimator + gates, M2/M3): a
-malformed plan fails loudly instead of constructing a plausible-looking object.
+LLM planner) and the deterministic world (cost estimator + gates).
 
 Validation is layered by responsibility:
-  * Field-level constraints (Field(gt=...), min_length, single-field field_validators)
-    guard individual values.
+  * Field-level constraints guard individual values.
   * model_validator(mode="after") guards cross-field / whole-object consistency, and
-    lives on the model that *owns* the data it checks (a Scene guarantees its own
-    asset/camera IDs are unique; the plan guarantees scene IDs are unique).
+    lives on the model that *owns* the data it checks.
 
-Budget affordability (M2) and geometric plausibility (M3) are deliberately NOT checked
-here — those are the gates' jobs. The schema validates shape and internal consistency,
-not cost or physics.
+Budget affordability, geometric plausibility, and training-value (diversity) are NOT
+checked here — those are the gates' jobs. The schema validates shape and internal
+consistency only.
 """
 
 from datetime import datetime, timezone
@@ -29,25 +26,20 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 class StrictModel(BaseModel):
     """Base for all plan schemas.
 
-    Rejects unknown fields (extra="forbid") so malformed plans — e.g. an LLM that
-    emits a hallucinated or misspelled field — fail validation instead of silently
-    losing data.
+    Rejects unknown fields (extra="forbid") so malformed plans fail validation instead
+    of silently losing data.
     """
 
     model_config = ConfigDict(extra="forbid")
 
 
 # --------------------------------------------------------------------------- #
-# Enums (not Pydantic models — extra="forbid" does not apply to them)
+# Enums
 # --------------------------------------------------------------------------- #
 
 
 class OutputModality(str, Enum):
-    """A ground-truth output captured per rendered image.
-
-    Each additional modality adds render/annotation cost — the concrete expression
-    of the project's multimodal framing.
-    """
+    """A ground-truth output captured per rendered image."""
 
     RGB = "RGB"
     DEPTH = "DEPTH"
@@ -74,8 +66,7 @@ class RendererType(str, Enum):
 class Transform(StrictModel):
     """A placement in 3D space. Reused by assets and cameras.
 
-    Rotation is expressed as Euler angles in degrees (decision #1: readable for
-    hand-authored fixtures; gimbal-lock edge cases accepted and documented).
+    Rotation is Euler angles in degrees (readable for hand-authored fixtures).
     """
 
     translation: tuple[float, float, float] = (0.0, 0.0, 0.0)
@@ -93,12 +84,7 @@ class Transform(StrictModel):
 
 
 class AssetReference(StrictModel):
-    """A pointer to a USD asset plus where it sits in the scene.
-
-    The validity gate (M3) loads geometry from usd_path and uses transform for
-    bounds/collision checks; asset_id identifies instances for segmentation and
-    produces readable validation errors.
-    """
+    """A pointer to a USD asset plus where it sits in the scene."""
 
     asset_id: str = Field(..., min_length=1)
     usd_path: str = Field(..., min_length=1)
@@ -122,10 +108,7 @@ class Camera(StrictModel):
 
 
 class RenderSettings(StrictModel):
-    """Quality/size knobs — the main per-image cost drivers.
-
-    samples_per_pixel is a major cost driver for path tracing.
-    """
+    """Quality/size knobs — the main per-image cost drivers."""
 
     width: int = Field(..., gt=0, le=8192)
     height: int = Field(..., gt=0, le=8192)
@@ -134,11 +117,6 @@ class RenderSettings(StrictModel):
 
     @model_validator(mode="after")
     def check_renderer_sample_consistency(self) -> "RenderSettings":
-        # samples_per_pixel is a path-tracing concept. A rasterized render with more
-        # than one sample is contradictory, so we flag it loudly rather than silently
-        # normalize — surfacing the contradiction fits a governor whose whole purpose
-        # is correctness and auditability (spec Section 7). Rasterized callers must
-        # set samples_per_pixel=1 explicitly.
         if self.renderer == RendererType.RASTERIZED and self.samples_per_pixel > 1:
             raise ValueError(
                 "RASTERIZED renderer does not use samples_per_pixel; "
@@ -148,13 +126,56 @@ class RenderSettings(StrictModel):
 
 
 class Budget(StrictModel):
-    """The spend constraint the budget gate (M2) enforces.
-
-    Carries the ceiling only — never the estimate, which M2 computes from the plan.
-    """
+    """The spend constraint the budget gate enforces. Carries the ceiling only."""
 
     max_usd: float = Field(..., gt=0)
     currency: str = "USD"
+
+
+# --------------------------------------------------------------------------- #
+# Domain-randomization declaration (consumed by the diversity gate, M4)
+# --------------------------------------------------------------------------- #
+
+
+class RandomizationParameter(StrictModel):
+    """One domain-randomization axis: which quantity varies and how densely.
+
+    `levels` is the number of distinct values sampled along this axis (works for both
+    continuous and discrete parameters). It is what the diversity gate uses to estimate
+    coverage capacity vs. the number of variations. `min_value`/`max_value` optionally
+    record a continuous range for future domain-gap checks; they do not affect the v1
+    diversity proxy.
+    """
+
+    name: str = Field(..., min_length=1)
+    levels: int = Field(..., ge=1)
+    min_value: float | None = None
+    max_value: float | None = None
+
+    @model_validator(mode="after")
+    def check_range(self) -> "RandomizationParameter":
+        if self.min_value is not None and self.max_value is not None:
+            if self.min_value >= self.max_value:
+                raise ValueError("min_value must be less than max_value.")
+        return self
+
+
+class Randomization(StrictModel):
+    """Declared domain randomization for a scene: which parameters vary and how densely.
+
+    Optional on a Scene. When present, the diversity gate (M4) uses it to estimate how
+    much of a job's variation budget lands in already-covered regions of the parameter
+    space — i.e. predictable low training value — before any GPU spend.
+    """
+
+    parameters: list[RandomizationParameter] = Field(..., min_length=1)
+
+    @model_validator(mode="after")
+    def check_unique_parameter_names(self) -> "Randomization":
+        names = [p.name for p in self.parameters]
+        if len(names) != len(set(names)):
+            raise ValueError("randomization parameter names must be unique.")
+        return self
 
 
 # --------------------------------------------------------------------------- #
@@ -165,8 +186,8 @@ class Budget(StrictModel):
 class Scene(StrictModel):
     """One 3D setup and how many randomized variations of it to produce.
 
-    A Scene owns its assets and cameras, so it is responsible for guaranteeing their
-    IDs are internally unique — validation lives here, not at the plan level.
+    A Scene owns its assets and cameras, so it guarantees their IDs are unique.
+    `randomization` optionally declares what varies across the variations.
     """
 
     scene_id: str = Field(..., min_length=1)
@@ -174,6 +195,7 @@ class Scene(StrictModel):
     assets: list[AssetReference] = Field(..., min_length=1)
     cameras: list[Camera] = Field(..., min_length=1)
     variation_count: int = Field(..., ge=1)
+    randomization: Randomization | None = None
 
     @model_validator(mode="after")
     def check_unique_child_ids(self) -> "Scene":
@@ -193,11 +215,7 @@ class Scene(StrictModel):
 
 
 class GenerationPlan(StrictModel):
-    """The object the whole system passes around: a job to be done plus its budget.
-
-    Kept dumb — it holds structure, not behavior. Gates decide verdicts; the estimator
-    computes cost; the plan only describes the job.
-    """
+    """The object the whole system passes around: a job plus its budget."""
 
     plan_id: str = Field(..., min_length=1)
     request_text: str | None = None

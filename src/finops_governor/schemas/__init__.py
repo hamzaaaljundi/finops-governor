@@ -1,8 +1,4 @@
-"""Public interface for the plan schema package.
-
-Downstream code imports from here (``from finops_governor.schemas import GenerationPlan``)
-rather than reaching into ``.models`` directly.
-"""
+"""Public interface for the plan schema package."""
 
 from .models import (
     AssetReference,
@@ -10,6 +6,8 @@ from .models import (
     Camera,
     GenerationPlan,
     OutputModality,
+    Randomization,
+    RandomizationParameter,
     RenderSettings,
     RendererType,
     Scene,
@@ -22,6 +20,8 @@ __all__ = [
     "Camera",
     "GenerationPlan",
     "OutputModality",
+    "Randomization",
+    "RandomizationParameter",
     "RenderSettings",
     "RendererType",
     "Scene",

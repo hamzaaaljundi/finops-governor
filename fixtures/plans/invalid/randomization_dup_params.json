@@ -1,0 +1,15 @@
+{
+  "plan_id": "bad-rand-dup",
+  "scenes": [
+    { "scene_id": "s1", "environment": { "asset_id": "e1", "usd_path": "e.usda" },
+      "assets": [{ "asset_id": "a1", "usd_path": "a.usda" }],
+      "cameras": [{ "camera_id": "c1", "transform": {} }], "variation_count": 10,
+      "randomization": { "parameters": [
+        { "name": "light.intensity", "levels": 5 },
+        { "name": "light.intensity", "levels": 3 }
+      ] } }
+  ],
+  "modalities": ["RGB"],
+  "render_settings": { "width": 1280, "height": 720 },
+  "budget": { "max_usd": 50.0 }
+}

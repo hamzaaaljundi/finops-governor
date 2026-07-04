@@ -69,6 +69,9 @@ def test_invalid_fixtures_are_rejected(path: Path):
         ("variation_count_zero.json", "greater than or equal to 1"),
         ("out_of_range_dimensions.json", "less than or equal to 8192"),
         ("missing_required_field.json", "Field required"),
+        ("randomization_bad_range.json", "min_value must be less than max_value"),
+        ("randomization_dup_params.json", "parameter names must be unique"),
+        ("randomization_zero_levels.json", "greater than or equal to 1"),
     ],
 )
 def test_invalid_fixture_reports_expected_rule(filename: str, expected_substring: str):

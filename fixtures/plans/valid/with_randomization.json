@@ -1,0 +1,27 @@
+{
+  "plan_id": "plan-randomized-004",
+  "request_text": "Robotic arm with domain randomization across pose and lighting",
+  "scenes": [
+    {
+      "scene_id": "scene-1",
+      "environment": { "asset_id": "floor", "usd_path": "assets/floor.usda" },
+      "assets": [
+        { "asset_id": "arm", "usd_path": "assets/arm.usda" }
+      ],
+      "cameras": [
+        { "camera_id": "cam-1", "transform": {} }
+      ],
+      "variation_count": 500,
+      "randomization": {
+        "parameters": [
+          { "name": "camera.azimuth_deg", "levels": 12, "min_value": 0.0, "max_value": 360.0 },
+          { "name": "light.intensity_lux", "levels": 5, "min_value": 500.0, "max_value": 2000.0 },
+          { "name": "arm.joint_pose", "levels": 8 }
+        ]
+      }
+    }
+  ],
+  "modalities": ["RGB", "DEPTH", "INSTANCE_SEGMENTATION"],
+  "render_settings": { "width": 1280, "height": 720 },
+  "budget": { "max_usd": 500.0 }
+}
