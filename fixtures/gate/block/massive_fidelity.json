@@ -1,0 +1,71 @@
+{
+  "plan_id": "massive-fidelity",
+  "scenes": [
+    {
+      "scene_id": "hero",
+      "environment": {
+        "asset_id": "hero-e",
+        "usd_path": "e.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "hero-a",
+          "usd_path": "a.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "hero-c0",
+          "transform": {}
+        },
+        {
+          "camera_id": "hero-c1",
+          "transform": {}
+        },
+        {
+          "camera_id": "hero-c2",
+          "transform": {}
+        },
+        {
+          "camera_id": "hero-c3",
+          "transform": {}
+        },
+        {
+          "camera_id": "hero-c4",
+          "transform": {}
+        },
+        {
+          "camera_id": "hero-c5",
+          "transform": {}
+        },
+        {
+          "camera_id": "hero-c6",
+          "transform": {}
+        },
+        {
+          "camera_id": "hero-c7",
+          "transform": {}
+        }
+      ],
+      "variation_count": 1
+    }
+  ],
+  "modalities": [
+    "RGB",
+    "DEPTH",
+    "SURFACE_NORMALS",
+    "SEMANTIC_SEGMENTATION",
+    "INSTANCE_SEGMENTATION",
+    "BBOX_2D",
+    "BBOX_3D",
+    "POSE"
+  ],
+  "render_settings": {
+    "width": 8192,
+    "height": 8192,
+    "samples_per_pixel": 1024
+  },
+  "budget": {
+    "max_usd": 0.5
+  }
+}

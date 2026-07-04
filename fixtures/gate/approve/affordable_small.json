@@ -1,0 +1,36 @@
+{
+  "plan_id": "affordable-small",
+  "scenes": [
+    {
+      "scene_id": "s1",
+      "environment": {
+        "asset_id": "s1-e",
+        "usd_path": "e.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "s1-a",
+          "usd_path": "a.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "s1-c0",
+          "transform": {}
+        }
+      ],
+      "variation_count": 1
+    }
+  ],
+  "modalities": [
+    "RGB"
+  ],
+  "render_settings": {
+    "width": 1280,
+    "height": 720,
+    "samples_per_pixel": 64
+  },
+  "budget": {
+    "max_usd": 50.0
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "plan_id": "unrecoverable-budget",
+  "scenes": [
+    {
+      "scene_id": "station-a",
+      "environment": {
+        "asset_id": "station-a-e",
+        "usd_path": "e.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "station-a-a",
+          "usd_path": "a.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "station-a-c0",
+          "transform": {}
+        },
+        {
+          "camera_id": "station-a-c1",
+          "transform": {}
+        }
+      ],
+      "variation_count": 300
+    },
+    {
+      "scene_id": "station-b",
+      "environment": {
+        "asset_id": "station-b-e",
+        "usd_path": "e.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "station-b-a",
+          "usd_path": "a.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "station-b-c0",
+          "transform": {}
+        }
+      ],
+      "variation_count": 200
+    }
+  ],
+  "modalities": [
+    "RGB",
+    "DEPTH",
+    "SEMANTIC_SEGMENTATION",
+    "INSTANCE_SEGMENTATION",
+    "BBOX_2D"
+  ],
+  "render_settings": {
+    "width": 1920,
+    "height": 1080,
+    "samples_per_pixel": 128
+  },
+  "budget": {
+    "max_usd": 0.01
+  }
+}

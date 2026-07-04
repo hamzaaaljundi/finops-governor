@@ -1,0 +1,41 @@
+{
+  "plan_id": "trim-large-batch",
+  "scenes": [
+    {
+      "scene_id": "bay",
+      "environment": {
+        "asset_id": "bay-e",
+        "usd_path": "e.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "bay-a",
+          "usd_path": "a.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "bay-c0",
+          "transform": {}
+        },
+        {
+          "camera_id": "bay-c1",
+          "transform": {}
+        }
+      ],
+      "variation_count": 2000
+    }
+  ],
+  "modalities": [
+    "RGB",
+    "DEPTH"
+  ],
+  "render_settings": {
+    "width": 1920,
+    "height": 1080,
+    "samples_per_pixel": 128
+  },
+  "budget": {
+    "max_usd": 0.5
+  }
+}
