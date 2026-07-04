@@ -1,27 +1,33 @@
-"""Budget gate (M2, Task 2.5).
+"""Budget gate (M2, Tasks 2.5 + 2.6).
 
-The deterministic gate's approve / block paths. Given a plan, it estimates the cost via
-an injected CostModel and compares it to the plan's budget:
+The deterministic gate. Given a plan, it estimates the cost via an injected CostModel
+and compares it to the plan's budget:
 
-    cost <= budget  ->  APPROVE
-    cost >  budget  ->  BLOCK   (Task 2.6 will attempt a MODIFY here before blocking)
+    cost <= budget                      ->  APPROVE
+    cost >  budget, modifier recovers   ->  MODIFY   (a cheaper, budget-fitting variant)
+    cost >  budget, unrecoverable       ->  BLOCK
 
-The gate depends only on the CostModel *interface*, never on a concrete implementation.
-That single indirection is what makes the governor substrate-agnostic: swap in a CPU or
-TPU cost model and the gate is unchanged. The comparison is exact and reproducible: same
-plan + same cost model -> same verdict, every time.
+The gate depends only on the CostModel *interface* (and, optionally, a PlanModifier),
+never on a concrete cost implementation — which is what keeps the governor
+substrate-agnostic. Same plan + same model + same modifier -> same verdict, every time.
+
+Without a modifier the gate is a pure approve/block gate (Task 2.5 behavior).
 """
 
 from finops_governor.estimator.base import CostModel
 from finops_governor.gate.decision import GateDecision
+from finops_governor.gate.modifier import PlanModifier
 from finops_governor.schemas import GenerationPlan
 
 
 class BudgetGate:
-    """Approve a plan if its estimated cost is within budget, else block it."""
+    """Approve, modify, or block a plan based on its estimated cost vs. budget."""
 
-    def __init__(self, cost_model: CostModel) -> None:
+    def __init__(
+        self, cost_model: CostModel, modifier: PlanModifier | None = None
+    ) -> None:
         self._cost_model = cost_model
+        self._modifier = modifier
 
     def evaluate(self, plan: GenerationPlan) -> GateDecision:
         estimate = self._cost_model.estimate(plan)
@@ -30,6 +36,17 @@ class BudgetGate:
         if estimate.total_usd <= budget:
             return GateDecision.approve(plan.plan_id, estimate, budget)
 
-        # Over budget. Task 2.6 will attempt a modification here before blocking;
-        # until then, an over-budget plan is blocked outright.
+        # Over budget: try to recover with a cheaper variant before blocking.
+        if self._modifier is not None:
+            proposal = self._modifier.propose(plan, budget)
+            if proposal is not None:
+                return GateDecision.modify(
+                    plan.plan_id,
+                    estimate,
+                    budget,
+                    proposal.plan,
+                    proposal.estimate,
+                    proposal.modifications,
+                )
+
         return GateDecision.block(plan.plan_id, estimate, budget)
