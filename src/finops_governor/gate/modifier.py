@@ -1,12 +1,14 @@
 """Plan modifier (M2, Task 2.6).
 
-When a plan is over budget, propose a cheaper variant that fits — rather than blocking
+When a plan is over budget, propose a cheaper variant that fits - rather than blocking
 outright. Strategy: proportionally reduce the number of variations per scene, preserving
-per-image fidelity (resolution, samples, modalities). Rationale: for training data,
-fewer full-quality samples is usually preferable to many degraded ones.
+per-image fidelity (resolution, samples, modalities). This trims *how many* samples, not
+their quality - and where a scene declares randomization, trimming variations moves the
+job toward the point of diminishing training value (the diversity gate, M4, makes that
+value explicit).
 
 The search is black-box against the CostModel interface (binary search over a global
-scale factor), so the modifier is substrate-agnostic like the gate — it never assumes
+scale factor), so the modifier is substrate-agnostic like the gate - it never assumes
 the GPU cost formula. Every candidate is re-validated through the GenerationPlan schema,
 so a proposal is always itself a valid plan.
 
