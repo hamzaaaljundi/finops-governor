@@ -42,14 +42,26 @@ deterministic budget + geometric-validity gate · execution stub · audit trail.
 *governance* is the product) · GPU autoscaling · downstream model training ·
 validating rendered output images.
 
+## What this is
+
+A **pre-flight gate for training-value-per-GPU-dollar** in synthetic-data generation.
+Before any GPU spins up, it refuses jobs that are **over budget**, **geometrically
+invalid**, or **predictably low training-value** — deciding not just whether a job is
+affordable and renderable, but whether it's *worth it*.
+
+The three checks are one idea: every one is a reason **not to spend GPU-hours on this
+job, catchable before you spend**. An LLM proposes plans; a deterministic gate decides.
+
 ## Status
 
-Milestone **M1 — plan schema** complete (`v0.1-schema`): the multimodal
-`GenerationPlan` contract, full field- and cross-field validation, 15 example
-fixtures, and a 30-test suite. Next: **M2 — deterministic cost estimator + budget gate**.
+- **M1 — plan schema** (`v0.1-schema`): the `GenerationPlan` contract, now with an
+  optional `randomization` block for diversity gating.
+- **M2 — deterministic cost + budget gate** (`v0.2-deterministic-gate`): approve /
+  modify / block, fully tested.
+- **Next: the multi-axis validity gate and the diversity/redundancy gate** — the
+  headline: catching low-training-value jobs before spend.
 
-See [ROADMAP.md](./ROADMAP.md) for the full plan and [docs/plan-schema.md](./docs/plan-schema.md)
-for the schema design rationale. Architecture decisions in [docs/adr/](./docs/adr/).
+See [ROADMAP.md](./ROADMAP.md) and [docs/adr/](./docs/adr/) for the design rationale.
 
 ## Quickstart
 
