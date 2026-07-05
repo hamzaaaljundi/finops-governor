@@ -3,6 +3,7 @@
 from finops_governor.validity.base import ValidityCheck
 from finops_governor.validity.composition import resolve_verdict, summarize_findings
 from finops_governor.validity.cost import CostCheck
+from finops_governor.validity.diversity import DiversityCheck
 from finops_governor.validity.models import (
     CheckContext,
     Finding,
@@ -13,6 +14,7 @@ from finops_governor.validity.models import (
 __all__ = [
     "CheckContext",
     "CostCheck",
+    "DiversityCheck",
     "Finding",
     "Severity",
     "ValidityCheck",
