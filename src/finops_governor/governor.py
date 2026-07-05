@@ -1,31 +1,25 @@
-"""The Governor - the composed multi-axis gate (M3, Task 3.3).
+"""The Governor - the composed multi-axis gate (M3, Tasks 3.3 + 3.4).
 
 Runs every registered validity check over a plan, aggregates their findings into one
 ValidityReport, and composes that into a single approve / modify / block decision.
 
 Depends only on the ValidityCheck interface, so new axes (diversity M4, USD geometry M5)
 register without changing this class. With a single CostCheck registered, it reproduces
-the M2 BudgetGate behavior exactly - the composed gate is a strict superset of the old
-budget gate, which is what makes "budget and geometry are one gate" literally true.
+the M2 BudgetGate behavior exactly.
 
-Composition precedence (formalized in Task 3.4): a BLOCKING finding dominates; else a
-MODIFIABLE finding yields MODIFY; else APPROVE (warnings are recorded, not decisive).
-Only the cost axis can produce a MODIFY (decision 2), so the modify proposal is built by
-the PlanModifier.
+The composition policy (precedence + audit summary) lives in validity.composition and is
+tested independently. Only the cost axis can produce a MODIFY (decision 2), so the modify
+proposal is built by the PlanModifier.
 """
 
 from finops_governor.estimator.base import CostModel
-from finops_governor.gate.decision import GateDecision
+from finops_governor.gate.decision import GateDecision, Verdict
 from finops_governor.gate.modifier import PlanModifier
 from finops_governor.schemas import GenerationPlan
 from finops_governor.validity.base import ValidityCheck
+from finops_governor.validity.composition import resolve_verdict, summarize_findings
 from finops_governor.validity.cost import CostCheck
-from finops_governor.validity.models import (
-    CheckContext,
-    Finding,
-    Severity,
-    ValidityReport,
-)
+from finops_governor.validity.models import CheckContext, Finding, ValidityReport
 
 
 class Governor:
@@ -56,17 +50,15 @@ class Governor:
             findings.extend(check.check(context))
         report = ValidityReport(findings=tuple(findings))
 
+        verdict = resolve_verdict(report)
         budget = plan.budget.max_usd
 
-        if report.has_blocking:
+        if verdict is Verdict.BLOCK:
             return GateDecision.block(
-                plan.plan_id,
-                estimate,
-                budget,
-                reason=self._summarize(report, Severity.BLOCKING),
+                plan.plan_id, estimate, budget, reason=summarize_findings(report)
             )
 
-        if report.has_modifiable:
+        if verdict is Verdict.MODIFY:
             # A modifiable finding guarantees the modifier can fit the plan
             # (single source of truth, established in the CostCheck).
             proposal = self._modifier.propose(plan, budget)
@@ -77,17 +69,12 @@ class Governor:
                 proposal.plan,
                 proposal.estimate,
                 proposal.modifications,
-                reason=self._summarize(report, Severity.MODIFIABLE),
+                reason=summarize_findings(report),
             )
 
-        if report.warnings:
-            reason = "Approved with warnings: " + " ".join(
-                w.reason for w in report.warnings
+        # APPROVE: clean uses the default reason; warnings are recorded for audit.
+        if report.findings:
+            return GateDecision.approve(
+                plan.plan_id, estimate, budget, reason=summarize_findings(report)
             )
-            return GateDecision.approve(plan.plan_id, estimate, budget, reason=reason)
-
         return GateDecision.approve(plan.plan_id, estimate, budget)
-
-    @staticmethod
-    def _summarize(report: ValidityReport, severity: Severity) -> str:
-        return " ".join(f.reason for f in report.findings if f.severity is severity)
