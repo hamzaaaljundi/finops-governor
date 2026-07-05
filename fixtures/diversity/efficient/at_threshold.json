@@ -1,0 +1,50 @@
+{
+  "plan_id": "div-at-threshold",
+  "scenes": [
+    {
+      "scene_id": "s1",
+      "environment": {
+        "asset_id": "s1-e",
+        "usd_path": "e.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "s1-a",
+          "usd_path": "a.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "s1-c0",
+          "transform": {}
+        }
+      ],
+      "variation_count": 200,
+      "randomization": {
+        "parameters": [
+          {
+            "name": "axis0",
+            "levels": 10
+          },
+          {
+            "name": "axis1",
+            "levels": 10
+          }
+        ]
+      }
+    }
+  ],
+  "modalities": [
+    "RGB",
+    "DEPTH",
+    "SEMANTIC_SEGMENTATION"
+  ],
+  "render_settings": {
+    "width": 1920,
+    "height": 1080,
+    "samples_per_pixel": 128
+  },
+  "budget": {
+    "max_usd": 1000000
+  }
+}

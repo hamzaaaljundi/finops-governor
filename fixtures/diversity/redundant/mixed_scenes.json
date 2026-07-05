@@ -1,0 +1,86 @@
+{
+  "plan_id": "div-mixed",
+  "scenes": [
+    {
+      "scene_id": "efficient",
+      "environment": {
+        "asset_id": "efficient-e",
+        "usd_path": "e.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "efficient-a",
+          "usd_path": "a.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "efficient-c0",
+          "transform": {}
+        }
+      ],
+      "variation_count": 400,
+      "randomization": {
+        "parameters": [
+          {
+            "name": "axis0",
+            "levels": 10
+          },
+          {
+            "name": "axis1",
+            "levels": 10
+          },
+          {
+            "name": "axis2",
+            "levels": 5
+          }
+        ]
+      }
+    },
+    {
+      "scene_id": "wasteful",
+      "environment": {
+        "asset_id": "wasteful-e",
+        "usd_path": "e.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "wasteful-a",
+          "usd_path": "a.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "wasteful-c0",
+          "transform": {}
+        }
+      ],
+      "variation_count": 8000,
+      "randomization": {
+        "parameters": [
+          {
+            "name": "axis0",
+            "levels": 8
+          },
+          {
+            "name": "axis1",
+            "levels": 4
+          }
+        ]
+      }
+    }
+  ],
+  "modalities": [
+    "RGB",
+    "DEPTH",
+    "SEMANTIC_SEGMENTATION"
+  ],
+  "render_settings": {
+    "width": 1920,
+    "height": 1080,
+    "samples_per_pixel": 128
+  },
+  "budget": {
+    "max_usd": 1000000
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "plan_id": "div-production",
+  "scenes": [
+    {
+      "scene_id": "s1",
+      "environment": {
+        "asset_id": "s1-e",
+        "usd_path": "e.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "s1-a",
+          "usd_path": "a.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "s1-c0",
+          "transform": {}
+        },
+        {
+          "camera_id": "s1-c1",
+          "transform": {}
+        }
+      ],
+      "variation_count": 50000,
+      "randomization": {
+        "parameters": [
+          {
+            "name": "axis0",
+            "levels": 4
+          },
+          {
+            "name": "axis1",
+            "levels": 4
+          }
+        ]
+      }
+    }
+  ],
+  "modalities": [
+    "RGB",
+    "DEPTH",
+    "SEMANTIC_SEGMENTATION",
+    "INSTANCE_SEGMENTATION",
+    "BBOX_2D"
+  ],
+  "render_settings": {
+    "width": 3840,
+    "height": 2160,
+    "samples_per_pixel": 256
+  },
+  "budget": {
+    "max_usd": 1000000
+  }
+}
