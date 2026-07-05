@@ -1,209 +1,98 @@
-# Plan Schema — Design Specification
+# Plan Schema - Design Specification
 
-> The design-on-paper artifact for **M1**. This document defines *what a generation
-> plan is* before any Pydantic code is written. When building the models (Task 1.3),
-> this spec is the reference — implementation should be transcription, not invention.
+> The `GenerationPlan` is the contract between the fuzzy world (the LLM planner) and the
+> deterministic world (cost estimator + gates). It is built bottom-up from leaf value
+> objects to the top-level plan, with strict validation at every layer.
 >
-> **Status:** Accepted · **Milestone:** M1 · **Implements the contract for:** M2, M3, M4, M5
+> **Status:** Accepted - **Milestone:** M1 (extended in the M4 training-value pivot)
 
----
+## 1. Principles
 
-## 1. Responsibility
+- **Strict boundary.** Every model inherits `StrictModel` (`extra="forbid"`) - unknown
+  fields are rejected, not silently dropped. A malformed plan fails validation loudly.
+- **Validate by responsibility.** Field constraints guard single values; `model_validator`
+  guards cross-field consistency and lives on the model that owns the data.
+- **Shape and consistency only.** The schema validates structure, not affordability,
+  plausibility, or training-value - those are the gates' jobs.
 
-`GenerationPlan` has one job: **describe a synthetic-data job to be done, plus the
-budget constraint it must respect.** Nothing else.
+## 2. Enums
 
-It is the **input** to the pipeline. It is the boundary between the fuzzy world
-(natural language, the LLM) and the deterministic world (cost estimator, gates).
-The LLM's messy output is forced through this contract, and only schema-valid plans
-are allowed to exist downstream.
+- **`OutputModality`**: RGB, DEPTH, SEMANTIC_SEGMENTATION, INSTANCE_SEGMENTATION, BBOX_2D,
+  BBOX_3D, SURFACE_NORMALS, POSE.
+- **`RendererType`**: PATH_TRACED, RASTERIZED.
 
----
+## 3. Leaf models
 
-## 2. Design principle — design backwards from the consumers
+**`Transform`** - a placement in 3D. `translation`, `rotation` (Euler degrees), `scale`
+(validator: all components > 0).
 
-The schema is designed backwards from what its **deterministic consumers** need, not
-forwards from "what does a job have." There are exactly three consumers:
+**`AssetReference`** - `asset_id`, `usd_path` (validator: ends `.usd`/`.usda`/`.usdc`),
+`transform`, optional `category`.
 
-| Consumer | Milestone | What it needs from the plan |
+**`Camera`** - `camera_id`, `transform`, `fov_degrees` (0 < fov < 180).
+
+**`RenderSettings`** - `width`/`height` (0 < x <= 8192), `samples_per_pixel` (0 < x <= 1024),
+`renderer` (validator: RASTERIZED must use samples_per_pixel = 1).
+
+**`Budget`** - `max_usd` (> 0), `currency`.
+
+## 4. Randomization block (added in the M4 pivot)
+
+Optional per-scene declaration of what varies across variations. Consumed by the diversity
+gate (M4) to estimate coverage efficiency before spend. Backward-compatible: plans without
+it are still valid.
+
+**`RandomizationParameter`**
+
+| Field | Type | Rule |
 |---|---|---|
-| **Cost estimator** | M2 | Everything that drives GPU spend: image count, resolution, render quality, modality count |
-| **Budget gate** | M2 | The budget ceiling |
-| **Validity gate** | M3 | Everything geometric: asset references, placements, camera positions |
+| `name` | str | non-empty |
+| `levels` | int | >= 1; count of distinct values sampled along this axis |
+| `min_value` | float \| None | optional continuous-range floor (for a future domain-gap axis) |
+| `max_value` | float \| None | optional; validator: if both present, min < max |
 
-Every field in this spec exists because at least one consumer reads it. If a field
-serves no consumer, it is cut.
+**`Randomization`**
 
----
+| Field | Type | Rule |
+|---|---|---|
+| `parameters` | list[RandomizationParameter] | min_length 1; validator: names unique |
 
-## 3. The boundary — what the plan must NOT contain
+## 5. Composite model - `Scene`
 
-The plan is the pipeline's **input**, so it must never contain the pipeline's **outputs**:
+| Field | Type | Rule |
+|---|---|---|
+| `scene_id` | str | non-empty |
+| `environment` | AssetReference | required |
+| `assets` | list[AssetReference] | min_length 1; validator: unique asset_ids |
+| `cameras` | list[Camera] | min_length 1; validator: unique camera_ids |
+| `variation_count` | int | >= 1 |
+| `randomization` | Randomization \| None | optional (see section 4) |
 
-- **No estimated cost / GPU-hours.** That is what M2 *computes from* the plan. The plan
-  carries the budget *ceiling* (a constraint), never the estimate (a result).
-- **No verdict** (approve / modify / block). That is the gate's output.
-- **No validity findings.** That is M3's output.
-- **No pricing table.** That is estimator configuration, not part of any single job.
-- **No rendered output** (pixels, output file paths). The entire premise is that we
-  decide *before* rendering.
+## 6. Top-level model - `GenerationPlan`
 
-Everything that is a *result* lives in a separate object produced by the component that
-computes it. Holding this line keeps the plan a clean description of intent.
+| Field | Type | Rule |
+|---|---|---|
+| `plan_id` | str | non-empty |
+| `request_text` | str \| None | optional original NL request |
+| `scenes` | list[Scene] | min_length 1; validator: unique scene_ids |
+| `modalities` | list[OutputModality] | min_length 1; validator: no duplicates |
+| `render_settings` | RenderSettings | required |
+| `budget` | Budget | required |
+| `created_at` | datetime | default: timezone-aware now (UTC) |
 
----
+## 7. Design decisions
 
-## 4. Locked design decisions
+1. **`StrictModel` base** (`extra="forbid"`) - the schema is a hard boundary.
+2. **USD path validation on `AssetReference`** - catch bad references at parse time.
+3. **Renderer/sample consistency** enforced on `RenderSettings`.
+4. **Timezone-aware `created_at`** - auditable, unambiguous timestamps.
+5. **Randomization: ADDED (M4 pivot).** Originally deferred ("model only
+   `variation_count`"); un-deferred when diversity gating became the headline axis, because
+   the diversity check needs to know what varies to estimate coverage. Added as an optional,
+   backward-compatible block. See `docs/diversity-model.md`.
 
-These five forks were decided during design and are fixed for M1:
+## 8. Fixtures
 
-| # | Decision | Choice | Rationale |
-|---|---|---|---|
-| 1 | Rotation representation | **Euler angles, degrees** | Human-readable for hand-authored fixtures; gimbal-lock edge cases accepted and noted |
-| 2 | Variation count scope | **Per-scene** | More flexible; makes the cost summation clean |
-| 3 | Temporal data | **Stills only** for M1 | Video/frame-sequences multiply complexity across every downstream component; deferred |
-| 4 | Target GPU | **Not in the plan** | Estimator assumes a default GPU; keeps the plan clean; trivial to add later |
-| 5 | Randomization detail | **Only `variation_count`** | The *count* of variations is all cost and validity need; modeling *what* varies is a future DSL |
-
----
-
-## 5. Model hierarchy (bottom-up)
-
-Build order for Task 1.3: leaves first (depend on nothing), then composites, then the
-top-level type. This ordering means each model is complete and testable before anything
-depends on it.
-
-### 5.1 Leaf models
-
-#### `Transform` — a placement in 3D space
-Reused by both assets and cameras.
-
-| Field | Type | Required | Constraint | Purpose |
-|---|---|---|---|---|
-| `translation` | tuple[float, float, float] | no — default `(0,0,0)` | — | Position; M3 uses it for bounds/collision checks |
-| `rotation` | tuple[float, float, float] | no — default `(0,0,0)` | euler degrees | Orientation |
-| `scale` | tuple[float, float, float] | no — default `(1,1,1)` | each component `> 0` | Size; scale ≤ 0 is invalid geometry |
-
-#### `AssetReference` — a pointer to a USD asset plus its placement
-
-| Field | Type | Required | Constraint | Purpose |
-|---|---|---|---|---|
-| `asset_id` | str | **yes** | non-empty | Identity; needed for instance segmentation and readable validity errors |
-| `usd_path` | str | **yes** | non-empty, ends `.usd` / `.usda` / `.usdc` | Where M3 loads geometry from |
-| `transform` | Transform | no — default identity | — | Placement in the scene |
-| `category` | str | no | — | Semantic label for segmentation |
-
-#### `Camera` — a viewpoint
-Camera count is a direct cost multiplier (more cameras = more images per variation).
-
-| Field | Type | Required | Constraint | Purpose |
-|---|---|---|---|---|
-| `camera_id` | str | **yes** | non-empty | Identity |
-| `transform` | Transform | **yes** | — | Position/orientation; M3 checks it frames the scene |
-| `fov_degrees` | float | no — default `50` | `0 < fov < 180` | Framing |
-
-#### `RenderSettings` — quality/size knobs (the main cost drivers)
-
-| Field | Type | Required | Constraint | Purpose |
-|---|---|---|---|---|
-| `width` | int | **yes** | `> 0`, `<= 8192` | Cost driver + output size |
-| `height` | int | **yes** | `> 0`, `<= 8192` | Cost driver |
-| `samples_per_pixel` | int | no — default `64` | `>= 1`, `<= 1024` | Path-trace quality; a **major** cost driver |
-| `renderer` | enum `{PATH_TRACED, RASTERIZED}` | no — default `PATH_TRACED` | — | Quality/cost tradeoff |
-
-#### `OutputModality` — an enum
-Each additional modality adds render/annotation cost — the multimodal-framing premise
-made concrete.
-
-Values: `RGB`, `DEPTH`, `SEMANTIC_SEGMENTATION`, `INSTANCE_SEGMENTATION`,
-`BBOX_2D`, `BBOX_3D`, `SURFACE_NORMALS`, `POSE`.
-
-#### `Budget` — the constraint the gate enforces
-
-| Field | Type | Required | Constraint | Purpose |
-|---|---|---|---|---|
-| `max_usd` | float | **yes** | `> 0` | The ceiling M2's budget gate checks against |
-| `currency` | str | no — default `"USD"` | — | Kept simple for M1 |
-
-### 5.2 Composite model
-
-#### `Scene` — one 3D setup and how many randomized variations to produce
-
-| Field | Type | Required | Constraint | Purpose |
-|---|---|---|---|---|
-| `scene_id` | str | **yes** | non-empty | Identity |
-| `environment` | AssetReference | **yes** | — | The backdrop (e.g. the assembly floor) |
-| `assets` | list[AssetReference] | **yes** | length `>= 1` | The subjects (e.g. the arm, props) |
-| `cameras` | list[Camera] | **yes** | length `>= 1` | Viewpoints; count multiplies image count |
-| `variation_count` | int | **yes** | `>= 1` | How many randomized variations to render |
-
-### 5.3 Top-level model
-
-#### `GenerationPlan` — the object the whole system passes around
-
-| Field | Type | Required | Constraint | Purpose |
-|---|---|---|---|---|
-| `plan_id` | str | **yes** | non-empty | Identity for the audit trail |
-| `request_text` | str | no | — | Original NL request, preserved for auditing |
-| `scenes` | list[Scene] | **yes** | length `>= 1` | The actual work |
-| `modalities` | list[OutputModality] | **yes** | length `>= 1`, no duplicates | What to capture per image |
-| `render_settings` | RenderSettings | **yes** | — | Global quality/size |
-| `budget` | Budget | **yes** | — | The constraint |
-| `created_at` | datetime | no — default `now()` | — | Audit timestamp |
-
-Keep `GenerationPlan` **dumb**: it holds structure, not behavior. Gates decide verdicts;
-the estimator computes cost; the plan only *describes* the job.
-
----
-
-## 6. Completeness check — tracing fields to consumers
-
-### Cost model (M2) preview
-
-```
-total_images   = Σ over scenes of ( variation_count × number_of_cameras )
-per_image_work ∝ width × height × samples_per_pixel × modality_weight(modalities)
-gpu_hours      = total_images × per_image_work / throughput
-cost_usd       = gpu_hours × price_per_hour
-```
-
-Every variable on the right maps to exactly one schema field —
-`variation_count`, `cameras`, `width`, `height`, `samples_per_pixel`, `modalities`.
-That one-to-one trace is the proof the schema is **complete for M2**.
-
-### Validity checks (M3) preview
-
-Every geometric check maps to `usd_path` (load the asset), `transform` (where it sits),
-and `cameras` (whether the viewpoint frames the scene). Complete for M3.
-
----
-
-## 7. Invariants (become validators in Task 1.5)
-
-Field-level constraints (Section 5) catch bad individual values. These model-level
-invariants catch bad *combinations* — the rules involving more than one field:
-
-- `modalities` contains no duplicates.
-- If `INSTANCE_SEGMENTATION` is requested, every `AssetReference` must have a stable
-  `asset_id` (already required, so this is a consistency assertion).
-- Every `scene_id`, `asset_id`, and `camera_id` is unique within its collection.
-- `RASTERIZED` renderer with a very high `samples_per_pixel` is contradictory
-  (samples are a path-tracing concept) — flag or normalize.
-
-> Encode only rules that are genuinely about plan **validity**. Budget checks belong to
-> M2's gate; geometry checks belong to M3's gate. The schema validates *shape and
-> internal consistency*, not *affordability* or *physical plausibility*.
-
----
-
-## 8. Deferred (explicitly out of scope for M1)
-
-Recorded so the boundaries are deliberate, not forgotten:
-
-- **Temporal / video sequences** (frame ranges, motion) — decision #3.
-- **Target GPU selection** in the plan — decision #4.
-- **Domain-randomization DSL** (which attributes vary, ranges, seeds) — decision #5.
-- **Quaternion rotations** — decision #1.
-- **Multi-currency budgets** with conversion.
-
-Each is an additive extension that does not change the M1 contract's core shape.
+`fixtures/plans/valid/` (including `with_randomization.json`) and
+`fixtures/plans/invalid/` (one broken rule per file, folder name = expectation). Tests
+auto-discover both and assert parse / reject, plus right-reason checks for invalid cases.
