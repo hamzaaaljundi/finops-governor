@@ -19,6 +19,7 @@ from finops_governor.schemas import GenerationPlan
 from finops_governor.validity.base import ValidityCheck
 from finops_governor.validity.composition import resolve_verdict, summarize_findings
 from finops_governor.validity.cost import CostCheck
+from finops_governor.validity.diversity import DiversityCheck
 from finops_governor.validity.models import CheckContext, Finding, ValidityReport
 
 
@@ -40,6 +41,12 @@ class Governor:
         """Default wiring: a governor with only the budget axis (M2-equivalent)."""
         modifier = PlanModifier(cost_model)
         return cls(cost_model, [CostCheck(modifier)], modifier)
+
+    @classmethod
+    def with_default_checks(cls, cost_model: CostModel) -> "Governor":
+        """Default multi-axis wiring: budget + diversity/redundancy."""
+        modifier = PlanModifier(cost_model)
+        return cls(cost_model, [CostCheck(modifier), DiversityCheck()], modifier)
 
     def evaluate(self, plan: GenerationPlan) -> GateDecision:
         estimate = self._cost_model.estimate(plan)
