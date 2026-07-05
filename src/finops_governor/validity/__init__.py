@@ -1,6 +1,7 @@
-"""Validity: the check interface and shared finding/report/context types."""
+"""Validity: the check interface, shared types, and check implementations."""
 
 from finops_governor.validity.base import ValidityCheck
+from finops_governor.validity.cost import CostCheck
 from finops_governor.validity.models import (
     CheckContext,
     Finding,
@@ -10,6 +11,7 @@ from finops_governor.validity.models import (
 
 __all__ = [
     "CheckContext",
+    "CostCheck",
     "Finding",
     "Severity",
     "ValidityCheck",
