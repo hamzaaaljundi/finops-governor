@@ -83,12 +83,23 @@ and therefore its limits - are stated plainly:
    the proxy is therefore optimistic about coverage and conservative about flagging.
 4. **Ranges ignored.** The proxy uses `levels`, not the declared `min`/`max` widths (those
    are reserved for a future domain-gap axis).
+5. **Declared-input trust (circularity).** The proxy trusts the self-declared `levels`.
+   Today a human authors the plan; at M6 the *LLM planner* authors it - meaning the
+   component being governed also writes the inputs to its own governor. A planner that
+   inflates `levels` (e.g. declaring 1,000 levels per axis) passes the gate while
+   generating redundant data. The gate still catches the common real-world failure -
+   honest over-generation against honestly declared ranges - but it does not defend
+   against adversarial or sloppy declarations. A production version would add
+   plausibility checks on declared ranges (is 1,000 lighting levels physically
+   meaningful?) or derive effective levels from the executor's actual sampler rather
+   than the planner's claim.
 
 **What a production version would need:** modeling parameter correlations; estimating actual
-coverage from the sampler's distribution (or its coupon-collector expectation); and,
-ultimately, embedding-space diversity of the target data - which requires a *learned*
-predictor to stay pre-execution, since measuring it directly would require rendering (and
-thus spending) the very GPU-hours the gate exists to protect.
+coverage from the sampler's distribution (or its coupon-collector expectation); declaration
+plausibility checks or executor-derived levels (see assumption 5); and, ultimately,
+embedding-space diversity of the target data - which requires a *learned* predictor to stay
+pre-execution, since measuring it directly would require rendering (and thus spending) the
+very GPU-hours the gate exists to protect.
 
 Framing redundancy as a pre-execution gate is the contribution; this proxy is a credible,
 honest v1 of the estimate, with its gap to a production model documented rather than hidden.

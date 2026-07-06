@@ -70,7 +70,15 @@ Shared constants: `ref_pixels` = 2,073,600 (1920x1080), `ref_samples` = 128,
 `rasterize_factor` = 0.05, `fixed_ingestion_seconds` = 30.0, `contingency_factor` = 1.15.
 
 **Baseline anchor:** a 1920x1080, 128-SPP, path-traced RGB frame ~= 1.2 s on the A10G.
-Set conservatively so the estimator errs toward over-prediction (see section 7).
+
+**Calibration status - read this.** The $/hr prices are verified against live cloud
+pricing; the *render-time constants* (`ref_render_seconds`, `rasterize_factor`,
+`fixed_ingestion_seconds`, the modality weights) are **illustrative engineering estimates,
+chosen conservatively - not measured benchmarks**. They make the estimator's *behavior*
+correct (deterministic, monotonic in resolution/samples/images, conservative) while its
+*absolute accuracy* is uncalibrated. Calibrating these constants against a measured
+Replicator/Isaac run - a one-day data-entry change, since every constant lives in
+`hardware_profiles.json` - is the first step toward production use.
 
 ## 6. Worked examples (verified)
 
