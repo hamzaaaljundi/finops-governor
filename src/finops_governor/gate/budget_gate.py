@@ -1,5 +1,11 @@
 """Budget gate (M2, Tasks 2.5 + 2.6).
 
+.. deprecated:: M3
+    Superseded by the multi-axis ``Governor`` (``finops_governor.governor``), which is a
+    proven strict superset: ``Governor.with_cost_check(model)`` reproduces this gate's
+    behavior exactly (see tests/test_governor.py parity tests). BudgetGate is retained
+    for the M2 release history and parity tests only; new code should use the Governor.
+
 The deterministic gate. Given a plan, it estimates the cost via an injected CostModel
 and compares it to the plan's budget:
 
@@ -8,7 +14,7 @@ and compares it to the plan's budget:
     cost >  budget, unrecoverable       ->  BLOCK
 
 The gate depends only on the CostModel *interface* (and, optionally, a PlanModifier),
-never on a concrete cost implementation — which is what keeps the governor
+never on a concrete cost implementation - which is what keeps the governor
 substrate-agnostic. Same plan + same model + same modifier -> same verdict, every time.
 
 Without a modifier the gate is a pure approve/block gate (Task 2.5 behavior).
@@ -21,7 +27,10 @@ from finops_governor.schemas import GenerationPlan
 
 
 class BudgetGate:
-    """Approve, modify, or block a plan based on its estimated cost vs. budget."""
+    """Approve, modify, or block a plan based on its estimated cost vs. budget.
+
+    Deprecated since M3: use ``Governor.with_cost_check`` (or ``with_default_checks``).
+    """
 
     def __init__(
         self, cost_model: CostModel, modifier: PlanModifier | None = None
