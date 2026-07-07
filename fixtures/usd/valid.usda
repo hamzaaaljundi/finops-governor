@@ -1,0 +1,32 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1
+    doc = "Clean scene: arm and box rest on the floor, no penetration, no overlap."
+)
+
+def Xform "World"
+{
+    def Cube "floor"
+    {
+        double size = 1.0
+        double3 xformOp:translate = (0, 0, 0)
+        double3 xformOp:scale = (10, 0.1, 10)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def Cube "arm"
+    {
+        double size = 1.0
+        double3 xformOp:translate = (0, 0.55, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "box"
+    {
+        double size = 1.0
+        double3 xformOp:translate = (2, 0.55, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
