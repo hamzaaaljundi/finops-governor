@@ -1,11 +1,18 @@
-"""The Governor - the composed multi-axis gate (M3, Tasks 3.3 + 3.4).
+"""The Governor - the composed multi-axis gate (M3, Tasks 3.3 + 3.4; extended M4/M5).
 
 Runs every registered validity check over a plan, aggregates their findings into one
 ValidityReport, and composes that into a single approve / modify / block decision.
 
-Depends only on the ValidityCheck interface, so new axes (diversity M4, USD geometry M5)
-register without changing this class. With a single CostCheck registered, it reproduces
-the M2 BudgetGate behavior exactly.
+Depends only on the ValidityCheck interface, so new axes register without changing this
+class. With a single CostCheck registered, it reproduces the M2 BudgetGate behavior
+exactly.
+
+Factory wiring:
+  * with_cost_check     - budget axis only (M2 parity)
+  * with_default_checks - plan-level axes: cost + diversity (no filesystem dependency)
+  * with_all_checks     - cost + diversity + USD geometry; requires the plan's stage
+                          paths (Scene.environment.usd_path, M5 convention) to resolve
+                          on disk, so it is explicit opt-in rather than the default
 
 The composition policy (precedence + audit summary) lives in validity.composition and is
 tested independently. Only the cost axis can produce a MODIFY (decision 2), so the modify
@@ -44,9 +51,27 @@ class Governor:
 
     @classmethod
     def with_default_checks(cls, cost_model: CostModel) -> "Governor":
-        """Default multi-axis wiring: budget + diversity/redundancy."""
+        """Plan-level multi-axis wiring: budget + diversity/redundancy."""
         modifier = PlanModifier(cost_model)
         return cls(cost_model, [CostCheck(modifier), DiversityCheck()], modifier)
+
+    @classmethod
+    def with_all_checks(cls, cost_model: CostModel) -> "Governor":
+        """All three axes: budget + diversity + USD geometry.
+
+        Requires each scene's stage path to resolve on disk (M5 convention:
+        Scene.environment.usd_path is the composed stage). Explicit opt-in because
+        plans with placeholder paths would be blocked by the existence check.
+        """
+        # Deferred import: only pay for pxr/usd-core when geometry is requested.
+        from finops_governor.validity.usd_geometry import UsdGeometryCheck
+
+        modifier = PlanModifier(cost_model)
+        return cls(
+            cost_model,
+            [CostCheck(modifier), DiversityCheck(), UsdGeometryCheck()],
+            modifier,
+        )
 
     def evaluate(self, plan: GenerationPlan) -> GateDecision:
         estimate = self._cost_model.estimate(plan)

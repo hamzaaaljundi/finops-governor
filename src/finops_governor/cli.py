@@ -5,6 +5,7 @@ multi-axis Governor and print the verdict, the findings, and the money.
 
     python -m finops_governor plan.json
     python -m finops_governor plan.json --profile h100
+    python -m finops_governor plan.json --geometry
 
 Exit code mirrors the verdict so the CLI composes into pipelines like the gate it is:
 0 = APPROVE, 1 = MODIFY (a fitting variant exists), 2 = BLOCK, 3 = invalid input.
@@ -39,6 +40,14 @@ def main(argv: list[str] | None = None) -> int:
         default="a10g",
         help="hardware profile for the cost model (default: a10g)",
     )
+    parser.add_argument(
+        "--geometry",
+        action="store_true",
+        help=(
+            "also run the USD geometry axis; requires each scene's stage path "
+            "(environment usd_path) to resolve on disk"
+        ),
+    )
     args = parser.parse_args(argv)
 
     path = Path(args.plan)
@@ -57,7 +66,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: unknown hardware profile: {args.profile}", file=sys.stderr)
         return 3
 
-    governor = Governor.with_default_checks(GpuRenderCostModel(profile))
+    cost_model = GpuRenderCostModel(profile)
+    governor = (
+        Governor.with_all_checks(cost_model)
+        if args.geometry
+        else Governor.with_default_checks(cost_model)
+    )
     decision = governor.evaluate(plan)
 
     print(f"plan:      {plan.plan_id}")
