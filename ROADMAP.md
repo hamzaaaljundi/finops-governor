@@ -42,22 +42,26 @@ downstream model training; validating rendered output images.
 - **M4 - Diversity / redundancy gate** (`v0.4-diversity-gate`). The headline: a
   deterministic, pre-execution estimate of redundant, low-training-value spend, quantified
   in dollars; `DiversityCheck` on the Governor's default wiring.
+- **M5 - OpenUSD geometric-validity gate** (`v0.5-usd-validity`). `UsdGeometryCheck`:
+  asset existence, asset-vs-environment penetration (BLOCKING), asset-vs-asset overlap
+  (WARNING), camera-framing orientation proxy (WARNING) - over real, lazily loaded USD
+  stages with a resting tolerance. `Governor.with_all_checks` composes all three axes;
+  CLI `--geometry` flag; a minimal CLI entry point (pulled forward from M8).
 
 ### Remaining
 
-- **M5 - OpenUSD geometric-validity gate** (`v0.5-usd-validity`). One more `ValidityCheck`:
-  load the scene's USD stage and check asset existence, bounds, and collision (bounding-box
-  overlap) - pre-render. USD tooling de-risked by a spike first. Lands the lazy-stage field
-  deferred to `CheckContext` in ADR 0004.
 - **M6 - Planning agent** (`v0.6-planner`). Natural language -> a schema-valid
   `GenerationPlan` (including randomization). A model API constrained by the M1 schema -
-  likely no heavy framework.
+  likely no heavy framework. Design must address the declared-input trust problem
+  documented in `docs/diversity-model.md` (the planner authors the randomization the
+  diversity gate judges).
 - **M7 - Orchestration + audit trail** (`v0.7-orchestration`). Wire plan -> estimate ->
   gate -> verdict -> execute into a state machine with a re-plan loop on modify, and a
   structured audit log recording which axis drove each decision. LangGraph is the natural
   fit (state machine); plain Python is a defensible alternative.
-- **M8 - Service, packaging, demo** (`v1.0`). CLI + `pip install` + FastAPI endpoint, a
-  shipped sample stage, and a README demo showing the combined verdict on a real job.
+- **M8 - Service, packaging, demo** (`v1.0`). FastAPI endpoint, `pip install` polish, a
+  shipped sample stage, and a README demo (GIF) showing the combined verdict on a real
+  job. The CLI itself shipped early, at M5.
 
 ---
 

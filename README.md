@@ -16,6 +16,19 @@ headline axis - diversity/redundancy gating - catches the expensive failure no s
 tool catches pre-execution: spending on data that is affordable and renderable but teaches
 the model almost nothing.
 
+## Try it
+
+```bash
+# a job that is affordable and renderable but ~100% redundant -> flagged, in dollars
+python -m finops_governor fixtures/diversity/redundant/production_scale.json
+
+# a job that is affordable and diverse but geometrically broken -> BLOCKED, $0 spent
+python -m finops_governor fixtures/geometry/floor_clip_scene.json --geometry
+```
+
+Exit codes mirror the verdict (0 = APPROVE, 1 = MODIFY, 2 = BLOCK), so the CLI composes
+into pipelines like the gate it is.
+
 ## How it works
 
 ```mermaid
@@ -32,10 +45,16 @@ flowchart TD
     H --> I
 ```
 
-The **Governor** runs independent validity checks - cost, diversity, and (soon) USD
-geometry - over the plan, aggregates their findings, and composes one approve / modify /
-block decision. Checks reason over the plan and scene description, never over generated
-data, which preserves the "block before GPU spend" guarantee.
+The **Governor** runs independent validity checks - cost, diversity, and USD geometry -
+over the plan, aggregates their findings, and composes one approve / modify / block
+decision. Checks reason over the plan and scene description, never over generated data,
+which preserves the "block before GPU spend" guarantee.
+
+| Axis | Question | Catches |
+|---|---|---|
+| Cost (M2/M3) | Can we afford this? | Over-budget jobs; proposes a trimmed variant when recoverable |
+| Diversity (M4) | Is it worth it? | Predictably redundant, low-training-value spend - quantified in dollars |
+| Geometry (M5) | Is the scene even valid? | Missing assets, assets through the floor, cameras aimed at nothing |
 
 ## Scope
 
@@ -53,7 +72,10 @@ images.
 - **M3** (`v0.3-validity-gate`): the multi-axis Governor - checks composed into one decision.
 - **M4** (`v0.4-diversity-gate`): **the diversity/redundancy gate** - a pre-execution
   estimate of wasted, low-training-value spend, quantified in dollars.
-- **Next: M5 - the OpenUSD geometric-validity gate** (one more axis on the same seam).
+- **M5** (`v0.5-usd-validity`): the OpenUSD geometric-validity gate - real stages,
+  validated pre-render (existence, penetration, framing).
+- **Next: M6 - the planning agent** (LLM -> schema-valid plans; the gate stays
+  deterministic).
 
 See [ROADMAP.md](./ROADMAP.md) for the full plan, [docs/](./docs/) for design specs, and
 [docs/adr/](./docs/adr/) for architecture decisions.
