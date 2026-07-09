@@ -10,7 +10,10 @@ from finops_governor.validity import (
     Severity,
     ValidityCheck,
 )
-from finops_governor.validity.diversity import expected_distinct
+from finops_governor.validity.diversity import (
+    expected_distinct,
+    justified_variation_count,
+)
 
 
 @pytest.fixture(scope="module")
@@ -68,13 +71,27 @@ def test_well_spread_plan_is_clean(model):
     assert DiversityCheck().check(_context(model, 500, [12, 5, 8])) == []
 
 
-def test_redundant_plan_warns(model):
+def test_redundant_plan_is_modifiable(model):
     findings = DiversityCheck().check(_context(model, 5000, [12, 8]))
     assert len(findings) == 1
     f = findings[0]
-    assert f.severity is Severity.WARNING
+    assert f.severity is Severity.MODIFIABLE  # ADR 0007: recoverable by construction
     assert f.detail["redundant_fraction"] > 0.5
     assert f.detail["expected_distinct"] == pytest.approx(96.0, abs=0.5)
+    assert f.detail["justified_variation_count"] >= 1
+
+
+def test_justified_count_sits_exactly_at_the_boundary():
+    for capacity in (16, 96, 100, 480):
+        n = justified_variation_count(capacity, waste_threshold=0.5)
+        assert 1.0 - expected_distinct(n, capacity) / n <= 0.5
+        assert 1.0 - expected_distinct(n + 1, capacity) / (n + 1) > 0.5
+
+
+def test_justified_count_is_always_recoverable():
+    # redundant_fraction(1) == 0 for every capacity -> a target always exists
+    assert justified_variation_count(1) >= 1
+    assert justified_variation_count(10_000) >= 1
 
 
 def test_double_oversampling_now_fires(model):

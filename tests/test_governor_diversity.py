@@ -1,15 +1,16 @@
-"""Governor + diversity integration tests (M4, Task 4.3).
+"""Governor + diversity integration tests (M4; value-aware semantics in M6.5, ADR 0007).
 
-Confirms diversity (a WARNING axis) never changes the cost-driven verdict but is always
-recorded in the decision's audit reason - the multi-axis composition working end-to-end.
+The diversity axis is MODIFIABLE: a redundant plan yields MODIFY with a value-trimmed
+proposal. The proposal is built in two ordered passes - value first (free), budget only
+if still needed (costs signal).
 """
 
 import pytest
 
 from finops_governor.estimator import GpuRenderCostModel, get_profile
+from finops_governor.gate import Verdict
 from finops_governor.governor import Governor
 from finops_governor.schemas import GenerationPlan
-from finops_governor.gate import Verdict
 
 
 @pytest.fixture(scope="module")
@@ -45,53 +46,67 @@ def _plan(budget: float, variation_count: int = 5000, declared: bool = True):
     )
 
 
-def test_default_wiring_has_both_axes(model):
-    # smoke: the factory builds a governor that flags redundancy
-    decision = Governor.with_default_checks(model).evaluate(_plan(50))
-    assert "diversity" in decision.reason
-
-
-def test_redundant_but_affordable_approves_with_warning(governor):
+def test_redundant_affordable_plan_gets_value_trimmed(governor):
     decision = governor.evaluate(_plan(50))
-    assert decision.verdict is Verdict.APPROVE  # warning does not block
-    assert "diversity" in decision.reason  # but is recorded
-    assert "wasted" in decision.reason or "redundant" in decision.reason
+    assert decision.verdict is Verdict.MODIFY
+    assert "diversity" in decision.reason
+    mods = " ".join(decision.modifications)
+    assert "value:" in mods and "expected-coverage trim" in mods
+    assert "budget:" not in mods  # value pass alone sufficed
+    # the proposal preserves the coverage bar at a fraction of the cost
+    assert decision.modified_plan.scenes[0].variation_count < 5000
+    assert decision.modified_estimate.total_usd < decision.estimate.total_usd
 
 
-def test_redundant_and_over_budget_recoverable_modifies(governor):
-    decision = governor.evaluate(_plan(1.0))
-    assert decision.verdict is Verdict.MODIFY  # cost drives the verdict
-    assert "diversity" in decision.reason  # diversity still recorded
-    assert "cost_budget" in decision.reason
+def test_value_trim_target_is_the_justified_count(governor):
+    decision = governor.evaluate(_plan(50))
+    trimmed = decision.modified_plan.scenes[0].variation_count
+    # capacity 96 at threshold 0.5 -> justified count is 153 (verified boundary)
+    assert trimmed == 153
 
 
-def test_redundant_and_unrecoverable_blocks(governor):
-    decision = governor.evaluate(_plan(0.001))
-    assert decision.verdict is Verdict.BLOCK
+def test_redundant_and_over_budget_uses_both_passes_in_order(governor):
+    # budget forces a cost finding too; the proposal must trim value FIRST,
+    # then budget only if still over
+    decision = governor.evaluate(_plan(0.05))
+    assert decision.verdict is Verdict.MODIFY
+    mods = decision.modifications
+    assert any(m.startswith("value:") for m in mods)
+    value_idx = next(i for i, m in enumerate(mods) if m.startswith("value:"))
+    budget_idxs = [i for i, m in enumerate(mods) if m.startswith("budget:")]
+    assert all(i > value_idx for i in budget_idxs)  # value pass recorded first
+    assert decision.modified_estimate.total_usd <= decision.budget_usd
+
+
+def test_value_trim_can_rescue_an_over_budget_plan_without_cutting_signal(governor):
+    # over budget as-planned, but the value-trimmed plan fits: no budget pass needed
+    decision = governor.evaluate(_plan(0.10))
+    assert decision.verdict is Verdict.MODIFY
+    mods = " ".join(decision.modifications)
+    assert "value:" in mods
+    assert "budget:" not in mods
+    assert decision.modified_estimate.total_usd <= 0.10
+
+
+def test_redundant_and_unrecoverable_still_blocks(governor):
+    decision = governor.evaluate(_plan(0.000001))
+    assert decision.verdict is Verdict.BLOCK  # below even the 1-variation floor
     assert "diversity" in decision.reason
 
 
-def test_efficient_plan_has_no_diversity_finding(governor):
+def test_efficient_plan_still_approves_untouched(governor):
     decision = governor.evaluate(_plan(50, variation_count=50))
     assert decision.verdict is Verdict.APPROVE
     assert "diversity" not in decision.reason
 
 
-def test_undeclared_randomization_has_no_diversity_finding(governor):
+def test_undeclared_randomization_is_never_trimmed(governor):
     decision = governor.evaluate(_plan(50, variation_count=100_000, declared=False))
+    assert decision.verdict is Verdict.APPROVE
     assert "diversity" not in decision.reason
 
 
-def test_diversity_does_not_change_cost_only_verdict(model):
-    # a governor with cost only vs cost+diversity must agree on the VERDICT
-    cost_only = Governor.with_cost_check(model)
-    both = Governor.with_default_checks(model)
-    for budget in (50, 1.0, 0.001):
-        plan = _plan(budget)
-        assert cost_only.evaluate(plan).verdict is both.evaluate(plan).verdict
-
-
-def test_decision_round_trips_with_diversity(governor):
+def test_proposal_round_trips_for_audit(governor):
     from finops_governor.gate import GateDecision
 
     decision = governor.evaluate(_plan(50))

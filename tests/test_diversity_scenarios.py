@@ -66,10 +66,14 @@ def test_mixed_scene_plan_flags_only_the_wasteful_scene(model):
     assert "wasteful" in findings[0].reason
 
 
-def test_redundant_scenarios_do_not_block_through_governor(model):
+def test_redundant_scenarios_get_value_trimmed_not_blocked(model):
+    from finops_governor.gate import Verdict
+
     governor = Governor.with_default_checks(model)
     plan = GenerationPlan.model_validate(
         json.loads((SCENARIOS / "redundant" / "production_scale.json").read_text())
     )
     decision = governor.evaluate(plan)
+    assert decision.verdict is Verdict.MODIFY  # ADR 0007: act on the waste
     assert "diversity" in decision.reason
+    assert decision.modified_estimate.total_usd < decision.estimate.total_usd

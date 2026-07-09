@@ -91,16 +91,17 @@ def test_geometry_blocking_dominates_cost_modify(model):
     assert "cost_budget" in decision.reason
 
 
-def test_clean_geometry_with_redundancy_approves_with_warning(model):
+def test_clean_geometry_with_redundancy_gets_value_trimmed(model):
     plan = _plan(
         "valid.usda",
         variation_count=5000,
         randomization={"parameters": [{"name": "az", "levels": 4}]},
     )
     decision = Governor.with_all_checks(model).evaluate(plan)
-    assert decision.verdict is Verdict.APPROVE
+    assert decision.verdict is Verdict.MODIFY  # ADR 0007
     assert "diversity" in decision.reason
     assert "usd_geometry" not in decision.reason  # geometry stays silent when clean
+    assert any(m.startswith("value:") for m in decision.modifications)
 
 
 def test_camera_away_approves_with_geometry_warning(model):

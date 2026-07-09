@@ -24,7 +24,11 @@ def _plan_json(budget: float = 999.0, variation_count: int = 500) -> str:
                     "cameras": [{"camera_id": "cam", "transform": {}}],
                     "variation_count": variation_count,
                     "randomization": {
-                        "parameters": [{"name": "azimuth", "levels": 12}]
+                        "parameters": [
+                            {"name": "azimuth", "levels": 12},
+                            {"name": "light", "levels": 5},
+                            {"name": "pose", "levels": 8},
+                        ]
                     },
                 }
             ],
@@ -63,13 +67,19 @@ def test_budget_flag_is_enforced_over_model_claim(capsys):
     assert "$999" not in out
 
 
-def test_generated_plan_is_judged_by_the_gate(capsys):
-    # a generated plan gets no special treatment: the diversity axis flags it
+def test_generated_plan_is_judged_and_trimmed_by_the_gate(capsys):
+    # a generated plan gets no special treatment: a redundant one is value-trimmed
+    redundant = (
+        _plan_json()
+        .replace('"levels": 5', '"levels": 1')
+        .replace('"levels": 8', '"levels": 1')
+    )  # capacity collapses to 12 -> heavily redundant
     code, out, _ = _run(
-        capsys, ["req", "--budget", "50"], FakePlannerModel([_plan_json()])
+        capsys, ["req", "--budget", "50"], FakePlannerModel([redundant])
     )
-    assert code == 0
-    assert "diversity" in out  # 500 variations over 12 configs -> warning recorded
+    assert code == 1  # MODIFY: the gate trims the planner's own waste
+    assert "diversity" in out
+    assert "value:" in out
 
 
 def test_save_writes_a_revalidatable_plan(capsys, tmp_path):
