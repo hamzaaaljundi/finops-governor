@@ -1,10 +1,10 @@
 # Diversity / Redundancy Model - Design Specification
 
-> The design-on-paper artifact for **M4, Task 4.1** - the project's headline innovation.
-> Defines how a plan's declared randomization becomes a pre-execution estimate of wasted,
-> low-training-value spend. Implementation (Task 4.2) transcribes this spec.
+> The design-on-paper artifact for the project's headline innovation (M4, upgraded in
+> M6.5 to an expected-coverage model). Defines how a plan's declared randomization
+> becomes a pre-execution estimate of wasted, low-training-value spend.
 >
-> **Status:** Accepted - **Milestone:** M4 - **Consumed by:** the Governor (as a validity axis)
+> **Status:** Accepted (v2) - **Milestones:** M4, M6.5 - **Consumed by:** the Governor (as a validity axis)
 
 ---
 
@@ -19,52 +19,70 @@ teaching the model almost nothing per extra dollar.
 
 No standard tool gates on this *before* execution. This axis does.
 
-## 2. The proxy
+## 2. The model (v2: expected coverage, not best-case spread)
 
 The check reasons over the **declared randomization** (the M1 `randomization` block) -
 never over generated data - so it is deterministic and pre-execution.
 
-For each scene that declares randomization:
+For each scene that declares randomization, with `n = variation_count` and
+`capacity = product of per-parameter levels`:
 
 ```
-capacity           = product of per-parameter `levels`     # distinct configurations
-variations         = scene.variation_count
-redundancy_ratio   = variations / capacity                 # avg samples per configuration
-redundant_fraction = max(0, 1 - capacity / variations)     # share beyond first coverage
+expected_distinct  = capacity * (1 - (1 - 1/capacity)^n)     # coupon-collector expectation
+redundant_fraction = 1 - expected_distinct / n               # expected wasted share of spend
 ```
 
-And - because the CheckContext already carries the per-scene cost estimate - the redundancy
-is quantified in dollars, which is the whole thesis:
+And - because the CheckContext carries the per-scene cost estimate - the waste is
+quantified in money, twice over:
 
 ```
-estimated_wasted_usd = scene_subtotal_usd * redundant_fraction
+estimated_wasted_usd          = scene_subtotal_usd * redundant_fraction
+effective_cost_per_distinct   = scene_subtotal_usd / expected_distinct
 ```
 
-A finding fires when `redundancy_ratio` exceeds a threshold (default **2.0** - i.e. more
-than half the variations are, on average, redundant). The finding is a **WARNING**: the
-scene is renderable and affordable; the gate flags the waste, it does not block or trim it
-(see decision 1).
+The second number is the sharpest framing this model produces: the **effective unit
+price of training signal**. A production job can cost $0.004 per image nominally while
+paying $23 per distinct configuration - the number the model can actually learn from.
+
+A finding fires when `redundant_fraction` exceeds a threshold (default **0.5**: more than
+half the scene's spend is expected redundant). The finding is a **WARNING**: the scene is
+renderable and affordable; the gate flags the waste (value-aware trimming is M6.5 Task B).
+
+### Why expected coverage instead of best-case (the v1 -> v2 change)
+
+v1 assumed ideal spread: the first `capacity` variations each hit a distinct
+configuration, so waste = max(0, 1 - capacity/n). That model has a cliff: 90 variations
+over 96 configurations reported **zero** waste, though uniform sampling actually collides
+long before capacity (the coupon-collector effect). v2 models the expectation directly:
+those 90 draws hit ~58.6 distinct configurations - **~35% expected waste** - smoothly,
+with no cliff. For heavily oversampled jobs the two models converge (expected coverage
+approaches capacity), so v1's headline numbers survive unchanged; the difference is
+entirely in the honest region near capacity, where v1 was blind.
 
 ## 3. Locked decisions
 
 | # | Decision | Choice | Rationale |
 |---|---|---|---|
-| 1 | Severity | **WARNING** | Redundant data is not invalid; flag it, let the user decide. Value-driven trimming is a documented future enhancement. |
+| 1 | Severity | **WARNING** | Redundant data is not invalid; flag it. Value-aware trimming is Task B of M6.5. |
 | 2 | Capacity model | **Product of `levels`** | The combinatorial count of distinct configurations under independence - the honest first cut. |
-| 3 | Threshold | **redundancy_ratio > 2.0** (tunable) | Some oversampling is legitimate (stochastic robustness); flag only clear waste. |
-| 4 | No randomization declared | **No finding** | You cannot judge coverage that was never declared. The check refuses to guess. |
-| 5 | Granularity | **Per scene** | `variation_count` and `randomization` are per-scene; findings are too. |
+| 3 | Coverage model | **Coupon-collector expectation** (v2) | Models real uniform-sampling collisions; smooth, no cliff, closed-form, deterministic. |
+| 4 | Threshold | **redundant_fraction > 0.5** (tunable) | Fire when more than half the spend is expected redundant; some oversampling is legitimate. |
+| 5 | No randomization declared | **No finding** | You cannot judge coverage that was never declared. The check refuses to guess. |
+| 6 | Granularity | **Per scene** | `variation_count` and `randomization` are per-scene; findings are too. |
 
 ## 4. Worked examples (verified against the real cost model, A10G)
 
-| Scene | levels | capacity | variations | ratio | redundant | scene cost | wasted | verdict |
+| Scene | capacity | n | E[distinct] | expected waste | scene cost | wasted | $/distinct | verdict |
 |---|---|---|---|---|---|---|---|---|
-| Well-spread | 12x5x8 | 480 | 500 | 1.04x | 4.0% | $0.24 | $0.01 | clean (below threshold) |
-| Redundant | 12x8 | 96 | 5,000 | 52x | 98.1% | $2.27 | **$2.22** | WARNING |
-| Production | 4x4 | 16 | 50,000 (x2 cam) | 3,125x | ~100% | $373.30 | **$373.18** | WARNING |
+| Well-spread | 480 | 500 | ~311 | 37.8% | $0.24 | - | - | clean (below 0.5) |
+| Near-capacity | 96 | 90 | ~58.6 | 34.9% | $0.04 | - | - | clean; v1 reported 0% here |
+| Double-oversampled | 100 | 200 | ~86.6 | 56.7% | $0.11 | $0.06 | $0.0012 | WARNING; invisible to v1 |
+| Redundant | 96 | 5,000 | ~96 | 98.1% | $2.27 | **$2.22** | $0.024 | WARNING |
+| Production | 16 | 50,000 (x2 cam) | 16 | ~100% | $373.30 | **$373.18** | **$23.33** | WARNING |
 
-The production case is the point: a $373 job whose spend is almost entirely redundant,
-flagged before any GPU spins up.
+The production row is the point, twice: a $373 job whose spend is almost entirely
+redundant, flagged before any GPU spins up - and a nominal $0.004/image job whose
+effective price is **$23.33 per distinct configuration**.
 
 ## 5. Scope and assumptions (read this)
 
@@ -77,13 +95,13 @@ and therefore its limits - are stated plainly:
    per axis (a modeling choice by the plan's author). Continuous ranges are treated as
    discretized into `levels` cells; two near-identical continuous samples are assumed not
    meaningfully distinct.
-3. **Ideal-spread sampling.** `redundant_fraction` assumes the first `capacity` variations
-   each hit a distinct configuration. Real random sampling collides (coupon-collector
-   effect), so true coverage of all configurations needs *more* than `capacity` samples -
-   the proxy is therefore optimistic about coverage and conservative about flagging.
-4. **Ranges ignored.** The proxy uses `levels`, not the declared `min`/`max` widths (those
+3. **Uniform independent sampling.** The coupon-collector expectation assumes the
+   executor samples configurations uniformly and independently. Stratified or Sobol/latin
+   samplers cover better than the expectation (the check is then conservative); adaptive
+   or biased samplers cover worse (the check is then optimistic).
+4. **Ranges ignored.** The model uses `levels`, not the declared `min`/`max` widths (those
    are reserved for a future domain-gap axis).
-5. **Declared-input trust (circularity).** The proxy trusts the self-declared `levels`.
+5. **Declared-input trust (circularity).** The model trusts the self-declared `levels`.
    Today a human authors the plan; at M6 the *LLM planner* authors it - meaning the
    component being governed also writes the inputs to its own governor. A planner that
    inflates `levels` (e.g. declaring 1,000 levels per axis) passes the gate while
@@ -94,12 +112,12 @@ and therefore its limits - are stated plainly:
    meaningful?) or derive effective levels from the executor's actual sampler rather
    than the planner's claim.
 
-**What a production version would need:** modeling parameter correlations; estimating actual
-coverage from the sampler's distribution (or its coupon-collector expectation); declaration
-plausibility checks or executor-derived levels (see assumption 5); and, ultimately,
-embedding-space diversity of the target data - which requires a *learned* predictor to stay
-pre-execution, since measuring it directly would require rendering (and thus spending) the
-very GPU-hours the gate exists to protect.
+**What a production version would need:** modeling parameter correlations; sampler-aware
+coverage (reading the executor's actual sampling strategy instead of assuming uniform);
+declaration plausibility checks or executor-derived levels (see assumption 5); and,
+ultimately, embedding-space diversity of the target data - which requires a *learned*
+predictor to stay pre-execution, since measuring it directly would require rendering (and
+thus spending) the very GPU-hours the gate exists to protect.
 
-Framing redundancy as a pre-execution gate is the contribution; this proxy is a credible,
-honest v1 of the estimate, with its gap to a production model documented rather than hidden.
+Framing redundancy as a pre-execution gate is the contribution; this model is a credible,
+honest v2 of the estimate, with its gap to a production model documented rather than hidden.

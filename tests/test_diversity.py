@@ -1,4 +1,4 @@
-"""DiversityCheck tests (M4, Task 4.2)."""
+"""DiversityCheck tests (M4, upgraded in M6.5 Task A: expected-coverage model)."""
 
 import pytest
 
@@ -10,6 +10,7 @@ from finops_governor.validity import (
     Severity,
     ValidityCheck,
 )
+from finops_governor.validity.diversity import expected_distinct
 
 
 @pytest.fixture(scope="module")
@@ -41,47 +42,80 @@ def _context(model, variation_count: int, levels: list[int], declared: bool = Tr
     return CheckContext(plan=plan, cost_estimate=model.estimate(plan))
 
 
+# --- the expected-coverage math itself ---
+
+
+def test_expected_distinct_converges_to_capacity():
+    # heavy oversampling: expect essentially every configuration hit
+    assert expected_distinct(50_000, 16) == pytest.approx(16.0, abs=1e-6)
+
+
+def test_expected_distinct_models_collisions_below_capacity():
+    # 90 draws over 96 cells does NOT hit 90 distinct cells (coupon-collector)
+    assert expected_distinct(90, 96) == pytest.approx(58.6, abs=0.5)
+
+
+# --- firing behavior ---
+
+
 def test_conforms_to_interface():
     assert isinstance(DiversityCheck(), ValidityCheck)
     assert DiversityCheck().name == "diversity"
 
 
 def test_well_spread_plan_is_clean(model):
-    # 500 variations across 12*5*8 = 480 configs -> ratio 1.04 -> below threshold
+    # 500 over 480 configs: expected redundancy ~38%, below the 50% default
     assert DiversityCheck().check(_context(model, 500, [12, 5, 8])) == []
 
 
 def test_redundant_plan_warns(model):
-    # 5000 variations across 12*8 = 96 configs -> ratio ~52 -> warning
     findings = DiversityCheck().check(_context(model, 5000, [12, 8]))
     assert len(findings) == 1
-    assert findings[0].severity is Severity.WARNING
-    assert findings[0].detail["redundancy_ratio"] > 2.0
+    f = findings[0]
+    assert f.severity is Severity.WARNING
+    assert f.detail["redundant_fraction"] > 0.5
+    assert f.detail["expected_distinct"] == pytest.approx(96.0, abs=0.5)
+
+
+def test_double_oversampling_now_fires(model):
+    # n = 2k was invisible to the old best-case model (exactly at its cliff);
+    # expected coverage shows ~57% of spend redundant -> fires at the 0.5 default
+    findings = DiversityCheck().check(_context(model, 200, [10, 10]))
+    assert len(findings) == 1
+    assert findings[0].detail["redundant_fraction"] == pytest.approx(0.567, abs=0.01)
+
+
+def test_near_capacity_waste_is_real_but_below_default(model):
+    # 90 over 96: the old model reported zero waste; expected coverage says ~35%.
+    # Below the 0.5 default (no finding), visible when the threshold is lowered.
+    assert DiversityCheck().check(_context(model, 90, [12, 8])) == []
+    findings = DiversityCheck(waste_threshold=0.2).check(_context(model, 90, [12, 8]))
+    assert len(findings) == 1
+    assert findings[0].detail["redundant_fraction"] == pytest.approx(0.349, abs=0.01)
 
 
 def test_undeclared_randomization_is_skipped(model):
-    # no randomization declared -> nothing to judge -> no finding, even at huge counts
     assert DiversityCheck().check(_context(model, 100_000, [], declared=False)) == []
 
 
-def test_finding_quantifies_wasted_dollars(model):
+def test_threshold_is_tunable(model):
+    ctx = _context(model, 500, [12, 5, 8])  # expected redundancy ~0.378
+    assert DiversityCheck(waste_threshold=0.5).check(ctx) == []
+    assert DiversityCheck(waste_threshold=0.3).check(ctx)
+
+
+# --- the money metrics ---
+
+
+def test_finding_quantifies_dollars_and_unit_price(model):
     findings = DiversityCheck().check(_context(model, 5000, [12, 8]))
     detail = findings[0].detail
     assert detail["estimated_wasted_usd"] > 0
-    assert 0 < detail["redundant_fraction"] < 1
+    assert (
+        detail["effective_cost_per_distinct_usd"] > detail["nominal_cost_per_image_usd"]
+    )
     assert detail["capacity"] == 96.0
-
-
-def test_threshold_is_tunable(model):
-    ctx = _context(model, 500, [12, 5, 8])  # ratio 1.04
-    assert DiversityCheck(redundancy_threshold=2.0).check(ctx) == []  # not flagged
-    assert DiversityCheck(redundancy_threshold=1.0).check(ctx)  # flagged at lower bar
-
-
-def test_exactly_at_threshold_is_clean(model):
-    # ratio exactly == threshold must NOT fire (strictly greater triggers)
-    ctx = _context(model, 200, [10, 10])  # 200 / 100 = 2.0
-    assert DiversityCheck(redundancy_threshold=2.0).check(ctx) == []
+    assert "distinct configuration" in findings[0].reason
 
 
 def test_pure_read_does_not_mutate_plan(model):

@@ -1,8 +1,8 @@
-"""Diversity scenario suite (M4, Task 4.4).
+"""Diversity scenario suite (M4, updated in M6.5 Task A for expected-coverage semantics).
 
-Drives named diversity fixtures through the DiversityCheck and the composed Governor.
-The folder name is the expectation: efficient/ must produce NO diversity finding,
-redundant/ must produce at least one. Adding a scenario is dropping a file in the right
+Folder name is the expectation: efficient/ must produce NO diversity finding (including
+real-but-below-threshold expected waste), redundant/ must fire with more than half the
+scene's spend expected redundant. Adding a scenario is dropping a file in the right
 folder - no test change.
 """
 
@@ -51,21 +51,25 @@ def test_efficient_scenarios_produce_no_finding(model, path):
 def test_redundant_scenarios_warn_with_dollar_waste(model, path):
     findings = _findings(model, path)
     assert findings, f"{path.name} should have flagged redundancy"
+    assert all(f.detail["redundant_fraction"] > 0.5 for f in findings)
     assert all(f.detail["estimated_wasted_usd"] > 0 for f in findings)
-    assert all(f.detail["redundancy_ratio"] > 2.0 for f in findings)
+    assert all(
+        f.detail["effective_cost_per_distinct_usd"]
+        > f.detail["nominal_cost_per_image_usd"]
+        for f in findings
+    )
 
 
 def test_mixed_scene_plan_flags_only_the_wasteful_scene(model):
     findings = _findings(model, SCENARIOS / "redundant" / "mixed_scenes.json")
-    assert len(findings) == 1  # only the wasteful scene, not the efficient one
+    assert len(findings) == 1
     assert "wasteful" in findings[0].reason
 
 
 def test_redundant_scenarios_do_not_block_through_governor(model):
-    # diversity is a WARNING: even a heavily-redundant, affordable plan approves
     governor = Governor.with_default_checks(model)
     plan = GenerationPlan.model_validate(
         json.loads((SCENARIOS / "redundant" / "production_scale.json").read_text())
     )
     decision = governor.evaluate(plan)
-    assert "diversity" in decision.reason  # recorded end-to-end
+    assert "diversity" in decision.reason
