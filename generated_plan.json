@@ -1,0 +1,171 @@
+{
+  "plan_id": "robotic-arm-assembly-floor-001",
+  "request_text": "500 variations of a robotic arm on an assembly floor, RGB and depth",
+  "scenes": [
+    {
+      "scene_id": "assembly_floor_robotic_arm",
+      "environment": {
+        "asset_id": "assembly_floor_env",
+        "usd_path": "/environments/assembly_floor/assembly_floor.usd",
+        "transform": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "category": "environment"
+      },
+      "assets": [
+        {
+          "asset_id": "robotic_arm_main",
+          "usd_path": "/assets/robots/robotic_arm/robotic_arm.usd",
+          "transform": {
+            "translation": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "category": "robotic_arm"
+        },
+        {
+          "asset_id": "assembly_workbench",
+          "usd_path": "/assets/furniture/workbench/workbench.usd",
+          "transform": {
+            "translation": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "category": "furniture"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "cam_front",
+          "transform": {
+            "translation": [
+              3.0,
+              0.0,
+              1.5
+            ],
+            "rotation": [
+              -10.0,
+              0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "fov_degrees": 60.0
+        },
+        {
+          "camera_id": "cam_side",
+          "transform": {
+            "translation": [
+              0.0,
+              3.0,
+              1.5
+            ],
+            "rotation": [
+              -10.0,
+              90.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "fov_degrees": 60.0
+        }
+      ],
+      "variation_count": 500,
+      "randomization": {
+        "parameters": [
+          {
+            "name": "arm_joint_configuration",
+            "levels": 50,
+            "min_value": -180.0,
+            "max_value": 180.0
+          },
+          {
+            "name": "lighting_intensity",
+            "levels": 5,
+            "min_value": 500.0,
+            "max_value": 5000.0
+          },
+          {
+            "name": "lighting_direction",
+            "levels": 8,
+            "min_value": 0.0,
+            "max_value": 360.0
+          },
+          {
+            "name": "arm_material_texture",
+            "levels": 4,
+            "min_value": null,
+            "max_value": null
+          },
+          {
+            "name": "background_clutter_objects",
+            "levels": 5,
+            "min_value": null,
+            "max_value": null
+          }
+        ]
+      }
+    }
+  ],
+  "modalities": [
+    "RGB",
+    "DEPTH"
+  ],
+  "render_settings": {
+    "width": 1280,
+    "height": 720,
+    "samples_per_pixel": 64,
+    "renderer": "PATH_TRACED"
+  },
+  "budget": {
+    "max_usd": 50.0,
+    "currency": "USD"
+  },
+  "created_at": "2024-01-15T00:00:00Z"
+}
