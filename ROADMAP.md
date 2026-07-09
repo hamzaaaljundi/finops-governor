@@ -47,21 +47,23 @@ downstream model training; validating rendered output images.
   (WARNING), camera-framing orientation proxy (WARNING) - over real, lazily loaded USD
   stages with a resting tolerance. `Governor.with_all_checks` composes all three axes;
   CLI `--geometry` flag; a minimal CLI entry point (pulled forward from M8).
+- **M6 - Planning agent** (`v0.6-planner`). NL -> schema-valid `GenerationPlan`: a
+  `PlannerModel` seam (live Anthropic client + scripted fake), the live
+  `model_json_schema()` as the prompt's single source of truth, a bounded repair loop
+  feeding verbatim validation errors back (3 attempts, then a clean `PlannerError`),
+  budget authority enforced by code after validation, and the declared-input circularity
+  mitigated at prompt level and documented. CLI plan mode: English in, verdict out.
 
 ### Remaining
 
-- **M6 - Planning agent** (`v0.6-planner`). Natural language -> a schema-valid
-  `GenerationPlan` (including randomization). A model API constrained by the M1 schema -
-  likely no heavy framework. Design must address the declared-input trust problem
-  documented in `docs/diversity-model.md` (the planner authors the randomization the
-  diversity gate judges).
 - **M7 - Orchestration + audit trail** (`v0.7-orchestration`). Wire plan -> estimate ->
   gate -> verdict -> execute into a state machine with a re-plan loop on modify, and a
   structured audit log recording which axis drove each decision. LangGraph is the natural
-  fit (state machine); plain Python is a defensible alternative.
+  fit (state machine); plain Python is a defensible alternative - decided deliberately at
+  milestone start.
 - **M8 - Service, packaging, demo** (`v1.0`). FastAPI endpoint, `pip install` polish, a
   shipped sample stage, and a README demo (GIF) showing the combined verdict on a real
-  job. The CLI itself shipped early, at M5.
+  job. The CLI itself shipped early, at M5, and gained plan mode at M6.
 
 ---
 
@@ -74,7 +76,7 @@ downstream model training; validating rendered output images.
 | `v0.3-validity-gate` | M3 | Cost + validity composed into one decision |
 | `v0.4-diversity-gate` | M4 | **Headline: pre-execution training-value gating** |
 | `v0.5-usd-validity` | M5 | Geometric validity as one axis, on real USD |
-| `v0.6-planner` | M6 | NL -> valid plan |
+| `v0.6-planner` | M6 | NL -> valid plan, judged by the same gate |
 | `v0.7-orchestration` | M7 | End-to-end, multi-axis audit trail |
 | `v1.0` | M8 | Runnable tool + demo of the value thesis |
 

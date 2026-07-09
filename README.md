@@ -19,6 +19,11 @@ the model almost nothing.
 ## Try it
 
 ```bash
+# English in, verdict out: the LLM plans, the deterministic gate decides
+# (needs ANTHROPIC_API_KEY)
+python -m finops_governor "500 variations of a robotic arm on an assembly floor, \
+RGB and depth" --budget 50 --save plan.json
+
 # a job that is affordable and renderable but ~100% redundant -> flagged, in dollars
 python -m finops_governor fixtures/diversity/redundant/production_scale.json
 
@@ -45,10 +50,14 @@ flowchart TD
     H --> I
 ```
 
-The **Governor** runs independent validity checks - cost, diversity, and USD geometry -
-over the plan, aggregates their findings, and composes one approve / modify / block
-decision. Checks reason over the plan and scene description, never over generated data,
-which preserves the "block before GPU spend" guarantee.
+The **planner** turns natural language into a `GenerationPlan`, forced through a strict
+schema with a bounded repair loop - the LLM's output is untrusted until validated, and
+the caller's budget is enforced by code, not by prompt. The **Governor** then runs
+independent validity checks - cost, diversity, and USD geometry - aggregates their
+findings, and composes one approve / modify / block decision. Checks reason over the
+plan and scene description, never over generated data, which preserves the "block before
+GPU spend" guarantee. A generated plan gets no special treatment: the gate judges the
+planner's output like anyone else's.
 
 | Axis | Question | Catches |
 |---|---|---|
@@ -74,8 +83,9 @@ images.
   estimate of wasted, low-training-value spend, quantified in dollars.
 - **M5** (`v0.5-usd-validity`): the OpenUSD geometric-validity gate - real stages,
   validated pre-render (existence, penetration, framing).
-- **Next: M6 - the planning agent** (LLM -> schema-valid plans; the gate stays
-  deterministic).
+- **M6** (`v0.6-planner`): the planning agent - NL to schema-valid plans behind a model
+  seam, with a bounded repair loop and code-enforced budget authority.
+- **Next: M7 - orchestration + audit trail** (the plan -> gate -> verdict state machine).
 
 See [ROADMAP.md](./ROADMAP.md) for the full plan, [docs/](./docs/) for design specs, and
 [docs/adr/](./docs/adr/) for architecture decisions.
