@@ -16,8 +16,9 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "pydantic>=2,<3",
-    "usd-core>=25,<27",
+    "pydantic>=2.0",
+    "usd-core>=25",
+    "anthropic>=0.40",
 ]
 
 [project.optional-dependencies]
