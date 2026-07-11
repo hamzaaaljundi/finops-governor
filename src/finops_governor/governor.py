@@ -20,6 +20,7 @@ Precedence is unchanged (ADR 0005): BLOCKING dominates; warnings never decide.
 """
 
 from finops_governor.estimator.base import CostModel
+from finops_governor.estimator.estimate import CostEstimate
 from finops_governor.gate.decision import GateDecision, Verdict
 from finops_governor.gate.modifier import PlanModifier
 from finops_governor.schemas import GenerationPlan
@@ -123,10 +124,10 @@ class Governor:
     def _build_proposal(
         self,
         plan: GenerationPlan,
-        estimate,
+        estimate: CostEstimate,
         budget: float,
         report: ValidityReport,
-    ):
+    ) -> tuple[GenerationPlan, CostEstimate, list[str]]:
         # Pass 1 - VALUE: trim flagged scenes to their justified counts.
         candidate, value_mods = self._value_trim(plan, report)
         candidate_estimate = (
@@ -140,6 +141,10 @@ class Governor:
         # A cost MODIFIABLE finding guarantees recoverability of the original plan;
         # the value-trimmed candidate is no more expensive, so it stays recoverable.
         proposal = self._modifier.propose(candidate, budget)
+        if proposal is None:  # pragma: no cover - excluded by the invariant above
+            raise RuntimeError(
+                "modifier could not recover a plan the cost check deemed recoverable"
+            )
         budget_mods = [f"budget: {m}" for m in proposal.modifications]
         return proposal.plan, proposal.estimate, value_mods + budget_mods
 

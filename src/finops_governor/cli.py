@@ -23,7 +23,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from finops_governor.estimator import GpuRenderCostModel, get_profile
+from finops_governor.estimator import GpuRenderCostModel, HardwareProfile, get_profile
 from finops_governor.gate.decision import GateDecision, Verdict
 from finops_governor.governor import Governor
 from finops_governor.planner import Planner, PlannerError, PlannerModel
@@ -163,7 +163,9 @@ def _plan_from_request(
 # ---------------------------------------------------------------------- #
 
 
-def _print_decision(plan: GenerationPlan, profile, decision: GateDecision) -> None:
+def _print_decision(
+    plan: GenerationPlan, profile: HardwareProfile, decision: GateDecision
+) -> None:
     print(f"plan:      {plan.plan_id}")
     print(f"profile:   {profile.name}")
     print(

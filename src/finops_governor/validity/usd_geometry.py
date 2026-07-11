@@ -18,10 +18,14 @@ Pure read: the check mutates nothing; stages are loaded lazily and memoized per 
 """
 
 import math
+from typing import TYPE_CHECKING
 
 from finops_governor.schemas import Camera, Scene
 from finops_governor.validity.models import CheckContext, Finding, Severity
 from finops_governor.validity.usd_stage import UsdStageError, UsdStageLoader
+
+if TYPE_CHECKING:  # typing only: runtime pxr import stays deferred (M5 isolation)
+    from pxr import Usd
 
 _DEFAULT_PENETRATION_EPSILON_M = 0.01
 
@@ -170,7 +174,11 @@ class UsdGeometryCheck:
                 for lo, hi in (bounds[a] for a in present_assets)
             ]
             n = len(centers)
-            scene_center = tuple(sum(c[i] for c in centers) / n for i in range(3))
+            scene_center = (
+                sum(c[0] for c in centers) / n,
+                sum(c[1] for c in centers) / n,
+                sum(c[2] for c in centers) / n,
+            )
             for camera in scene.cameras:
                 dot = self._framing_dot(camera, scene_center)
                 if dot <= 0:
@@ -199,7 +207,7 @@ class UsdGeometryCheck:
     # ------------------------------------------------------------------ #
 
     @staticmethod
-    def _world_bounds(stage) -> dict[str, _Range]:
+    def _world_bounds(stage: "Usd.Stage") -> dict[str, _Range]:
         """World-space AABB per geometry prim, keyed by prim name (= asset_id)."""
         from pxr import Usd, UsdGeom
 
