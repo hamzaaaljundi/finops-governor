@@ -24,7 +24,8 @@ the model almost nothing.
 python -m finops_governor "500 variations of a robotic arm on an assembly floor, \
 RGB and depth" --budget 50 --save plan.json
 
-# a job that is affordable and renderable but ~100% redundant -> flagged, in dollars
+# a $373 job that is ~100% redundant -> flagged in dollars AND handed back
+# as a 26-variation, $0.20 proposal at the same expected-coverage bar (exit 1)
 python -m finops_governor fixtures/diversity/redundant/production_scale.json
 
 # a job that is affordable and diverse but geometrically broken -> BLOCKED, $0 spent
@@ -59,10 +60,15 @@ plan and scene description, never over generated data, which preserves the "bloc
 GPU spend" guarantee. A generated plan gets no special treatment: the gate judges the
 planner's output like anyone else's.
 
+When a plan is recoverable, the proposal is built in two ordered passes (ADR 0007):
+**value first** - scenes are trimmed to their expected-coverage-justified variation
+counts, removing only predictably redundant frames - then **budget** only if the plan
+still exceeds its ceiling. Never cut signal while waste remains.
+
 | Axis | Question | Catches |
 |---|---|---|
 | Cost (M2/M3) | Can we afford this? | Over-budget jobs; proposes a trimmed variant when recoverable |
-| Diversity (M4) | Is it worth it? | Predictably redundant, low-training-value spend - quantified in dollars |
+| Diversity (M4/M6.5) | Is it worth it? | Predictably redundant spend - quantified in dollars and trimmed away (expected-coverage model, cost-per-distinct metric) |
 | Geometry (M5) | Is the scene even valid? | Missing assets, assets through the floor, cameras aimed at nothing |
 
 ## Scope
@@ -85,6 +91,9 @@ images.
   validated pre-render (existence, penetration, framing).
 - **M6** (`v0.6-planner`): the planning agent - NL to schema-valid plans behind a model
   seam, with a bounded repair loop and code-enforced budget authority.
+- **M6.5** (`v0.6.5-value-gate`): **the gate acts on the waste it prices** - expected-
+  coverage diversity model (coupon-collector), cost-per-distinct metric, value-aware
+  modification (ADR 0007), adversarial prompt-injection suite, mypy in CI.
 - **Next: M7 - orchestration + audit trail** (the plan -> gate -> verdict state machine).
 
 See [ROADMAP.md](./ROADMAP.md) for the full plan, [docs/](./docs/) for design specs, and

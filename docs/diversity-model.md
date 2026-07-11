@@ -4,7 +4,7 @@
 > M6.5 to an expected-coverage model). Defines how a plan's declared randomization
 > becomes a pre-execution estimate of wasted, low-training-value spend.
 >
-> **Status:** Accepted (v2) - **Milestones:** M4, M6.5 - **Consumed by:** the Governor (as a validity axis)
+> **Status:** Accepted (v2, value-aware) - **Milestones:** M4, M6.5 (ADR 0007) - **Consumed by:** the Governor (as a validity axis and as the value-trim target source)
 
 ---
 
@@ -45,8 +45,14 @@ price of training signal**. A production job can cost $0.004 per image nominally
 paying $23 per distinct configuration - the number the model can actually learn from.
 
 A finding fires when `redundant_fraction` exceeds a threshold (default **0.5**: more than
-half the scene's spend is expected redundant). The finding is a **WARNING**: the scene is
-renderable and affordable; the gate flags the waste (value-aware trimming is M6.5 Task B).
+half the scene's spend is expected redundant). The finding is **MODIFIABLE** (ADR 0007):
+redundancy above threshold is recoverable by construction (redundant_fraction(1) = 0 for
+every capacity), and each finding carries `justified_variation_count` - the largest count
+whose expected waste is within the threshold. The Governor's value-trim pass reads that
+target and proposes the plan without the waste: the production example below is flagged
+at $373.30 and comes back as a 26-variation proposal at ~$0.20, same expected-coverage
+bar. Value trims are applied before any budget trim - waste removal costs nothing;
+budget trimming costs signal.
 
 ### Why expected coverage instead of best-case (the v1 -> v2 change)
 
@@ -63,7 +69,7 @@ entirely in the honest region near capacity, where v1 was blind.
 
 | # | Decision | Choice | Rationale |
 |---|---|---|---|
-| 1 | Severity | **WARNING** | Redundant data is not invalid; flag it. Value-aware trimming is Task B of M6.5. |
+| 1 | Severity | **MODIFIABLE** (ADR 0007; amends M4's WARNING) | Recoverable by construction: a compliant trim target always exists, so the gate proposes the plan without the waste instead of merely flagging it. |
 | 2 | Capacity model | **Product of `levels`** | The combinatorial count of distinct configurations under independence - the honest first cut. |
 | 3 | Coverage model | **Coupon-collector expectation** (v2) | Models real uniform-sampling collisions; smooth, no cliff, closed-form, deterministic. |
 | 4 | Threshold | **redundant_fraction > 0.5** (tunable) | Fire when more than half the spend is expected redundant; some oversampling is legitimate. |

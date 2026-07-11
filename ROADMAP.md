@@ -54,6 +54,15 @@ downstream model training; validating rendered output images.
   budget authority enforced by code after validation, and the declared-input circularity
   mitigated at prompt level and documented. CLI plan mode: English in, verdict out.
 
+- **M6.5 - Close the loop** (`v0.6.5-value-gate`). The gate acts on the waste it
+  prices: the diversity model upgraded to expected coverage (coupon-collector - smooth,
+  no best-case cliff, headline dollars preserved to the cent) with an
+  effective-cost-per-distinct metric ($0.004/image nominal vs $23.33/distinct on the
+  production example); value-aware modification (ADR 0007) - diversity findings are
+  MODIFIABLE, the proposal is built value-pass-then-budget-pass, and the $373 redundant
+  job comes back as a $0.20 same-coverage proposal; a named adversarial prompt-injection
+  suite attacking the trust boundary; mypy (strict settings) added to CI.
+
 ### Remaining
 
 - **M7 - Orchestration + audit trail** (`v0.7-orchestration`). Wire plan -> estimate ->
@@ -77,6 +86,7 @@ downstream model training; validating rendered output images.
 | `v0.4-diversity-gate` | M4 | **Headline: pre-execution training-value gating** |
 | `v0.5-usd-validity` | M5 | Geometric validity as one axis, on real USD |
 | `v0.6-planner` | M6 | NL -> valid plan, judged by the same gate |
+| `v0.6.5-value-gate` | M6.5 | **The gate removes the waste it prices** |
 | `v0.7-orchestration` | M7 | End-to-end, multi-axis audit trail |
 | `v1.0` | M8 | Runnable tool + demo of the value thesis |
 
