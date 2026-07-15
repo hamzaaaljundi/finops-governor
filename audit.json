@@ -1,0 +1,302 @@
+{
+  "request": "50,000 variations of a robotic arm on an assembly floor, RGB and depth",
+  "budget_usd": 1000.0,
+  "plan": {
+    "plan_id": "robotic-arm-assembly-floor-001",
+    "request_text": "50,000 variations of a robotic arm on an assembly floor, RGB and depth",
+    "scenes": [
+      {
+        "scene_id": "assembly-floor-robotic-arm",
+        "environment": {
+          "asset_id": "assembly_floor_env",
+          "usd_path": "/environments/assembly_floor/assembly_floor.usd",
+          "transform": {
+            "translation": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "category": "environment"
+        },
+        "assets": [
+          {
+            "asset_id": "robotic_arm_main",
+            "usd_path": "/assets/robots/robotic_arm/robotic_arm.usd",
+            "transform": {
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "category": "robotic_arm"
+          },
+          {
+            "asset_id": "assembly_workbench",
+            "usd_path": "/assets/furniture/workbench/workbench.usd",
+            "transform": {
+              "translation": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "category": "furniture"
+          },
+          {
+            "asset_id": "assembly_parts_tray",
+            "usd_path": "/assets/props/parts_tray/parts_tray.usd",
+            "transform": {
+              "translation": [
+                0.5,
+                0.0,
+                0.8
+              ],
+              "rotation": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "category": "prop"
+          }
+        ],
+        "cameras": [
+          {
+            "camera_id": "cam_front",
+            "transform": {
+              "translation": [
+                3.0,
+                0.0,
+                1.5
+              ],
+              "rotation": [
+                -10.0,
+                0.0,
+                0.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "fov_degrees": 60.0
+          },
+          {
+            "camera_id": "cam_side",
+            "transform": {
+              "translation": [
+                0.0,
+                3.0,
+                1.5
+              ],
+              "rotation": [
+                -10.0,
+                90.0,
+                0.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "fov_degrees": 60.0
+          },
+          {
+            "camera_id": "cam_overhead",
+            "transform": {
+              "translation": [
+                0.0,
+                0.0,
+                4.0
+              ],
+              "rotation": [
+                -90.0,
+                0.0,
+                0.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "fov_degrees": 70.0
+          }
+        ],
+        "variation_count": 50000,
+        "randomization": {
+          "parameters": [
+            {
+              "name": "arm_joint_configuration",
+              "levels": 500,
+              "min_value": -180.0,
+              "max_value": 180.0
+            },
+            {
+              "name": "lighting_intensity",
+              "levels": 20,
+              "min_value": 500.0,
+              "max_value": 5000.0
+            },
+            {
+              "name": "lighting_direction",
+              "levels": 16,
+              "min_value": 0.0,
+              "max_value": 360.0
+            },
+            {
+              "name": "arm_material_texture",
+              "levels": 10,
+              "min_value": null,
+              "max_value": null
+            },
+            {
+              "name": "floor_material_texture",
+              "levels": 8,
+              "min_value": null,
+              "max_value": null
+            },
+            {
+              "name": "camera_position_jitter",
+              "levels": 25,
+              "min_value": -0.2,
+              "max_value": 0.2
+            },
+            {
+              "name": "background_clutter_props",
+              "levels": 15,
+              "min_value": null,
+              "max_value": null
+            },
+            {
+              "name": "ambient_occlusion_strength",
+              "levels": 5,
+              "min_value": 0.0,
+              "max_value": 1.0
+            }
+          ]
+        }
+      }
+    ],
+    "modalities": [
+      "RGB",
+      "DEPTH"
+    ],
+    "render_settings": {
+      "width": 1280,
+      "height": 720,
+      "samples_per_pixel": 64,
+      "renderer": "PATH_TRACED"
+    },
+    "budget": {
+      "max_usd": 1000.0,
+      "currency": "USD"
+    },
+    "created_at": "2024-01-15T00:00:00Z"
+  },
+  "decision": {
+    "verdict": "APPROVE",
+    "plan_id": "robotic-arm-assembly-floor-001",
+    "reason": "Estimated $14.79 is within the $1000.00 budget.",
+    "estimate": {
+      "total_usd": 14.792251944444443,
+      "total_gpu_hours": 14.704027777777776,
+      "total_images": 150000,
+      "hardware_profile": "NVIDIA A10G (AWS g5.xlarge)",
+      "per_scene": [
+        {
+          "scene_id": "assembly-floor-robotic-arm",
+          "images": 150000,
+          "fixed_seconds": 30.0,
+          "render_seconds": 46000.0,
+          "subtotal_usd": 14.792251944444443
+        }
+      ]
+    },
+    "budget_usd": 1000.0,
+    "modified_plan": null,
+    "modified_estimate": null,
+    "modifications": []
+  },
+  "gate_passes": 1,
+  "status": "EXECUTED",
+  "error": null,
+  "events": [
+    {
+      "sequence": 0,
+      "node": "plan",
+      "timestamp": "2026-07-15T18:06:20.591851Z",
+      "summary": "planned 'robotic-arm-assembly-floor-001' (assembly-floor-robotic-arm x50000)",
+      "verdict": null,
+      "driving_axes": null,
+      "estimated_usd": null,
+      "budget_usd": 1000.0,
+      "detail": null
+    },
+    {
+      "sequence": 1,
+      "node": "gate",
+      "timestamp": "2026-07-15T18:06:20.592097Z",
+      "summary": "verdict APPROVE on 'robotic-arm-assembly-floor-001': Estimated $14.79 is within the $1000.00 budget.",
+      "verdict": "APPROVE",
+      "driving_axes": null,
+      "estimated_usd": 14.792251944444443,
+      "budget_usd": 1000.0,
+      "detail": null
+    },
+    {
+      "sequence": 2,
+      "node": "execute",
+      "timestamp": "2026-07-15T18:06:20.592128Z",
+      "summary": "execution stub: would render 150,000 images (14.70 GPU-hours, $14.79) on NVIDIA A10G (AWS g5.xlarge)",
+      "verdict": null,
+      "driving_axes": null,
+      "estimated_usd": 14.792251944444443,
+      "budget_usd": 1000.0,
+      "detail": {
+        "plan_id": "robotic-arm-assembly-floor-001",
+        "images": 150000,
+        "gpu_hours": 14.704027777777776
+      }
+    }
+  ]
+}
