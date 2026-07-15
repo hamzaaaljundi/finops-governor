@@ -79,10 +79,13 @@ def test_injection_cannot_skip_the_validity_checks():
 
 
 def test_injection_cannot_self_approve_through_the_cli(capsys):
-    # end to end: the "pre-approved" claim yields no approval; exit code is the gate's
+    # end to end (M7 pipeline): the "pre-approved" claim yields no special treatment -
+    # the gate value-trims the attacker's redundant plan, and what executes is the
+    # trimmed job under the CALLER's budget, not the injected one
     fake = FakePlannerModel([_compliant_with_injection()])
     code = main([INJECTION_REQUEST, "--budget", "50"], planner_model=fake)
     out = capsys.readouterr().out
-    assert code == 1  # MODIFY - decided by the gate, not the request
-    assert "budget:    $50.00" in out  # the caller's ceiling, not the injected one
-    assert "diversity" in out
+    assert code == 0  # EXECUTED - after the gate removed the injected waste
+    assert "$50.00" in out and "$1,000,000" not in out  # the caller's ceiling
+    assert "adopt" in out and "saved" in out  # the attacker's waste, trimmed
+    assert "[diversity]" in out  # attributed in the audit trail

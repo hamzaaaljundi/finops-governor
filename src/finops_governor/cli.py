@@ -1,19 +1,20 @@
-"""Command-line entry point (pulled forward from M8; plan mode added in M6).
+"""Command-line entry point (CLI at M5, plan mode at M6, full pipeline at M7).
 
 Two modes, selected by --budget:
 
-  Evaluate a plan file (no --budget; budget lives in the JSON):
-      python -m finops_governor plan.json
-      python -m finops_governor plan.json --profile h100 --geometry
+  Evaluate a plan file (no --budget) - ONE gate pass, the gate's own interface:
+      python -m finops_governor plan.json [--profile h100] [--geometry]
+      exit: 0 = APPROVE, 1 = MODIFY (proposal printed), 2 = BLOCK, 3 = invalid input
 
-  Plan from natural language, then evaluate (--budget = the caller's ceiling):
-      python -m finops_governor "500 variations of a robotic arm" --budget 50
-      python -m finops_governor "..." --budget 50 --save plan.json
+  Plan from natural language - the FULL pipeline (M7): plan -> gate -> adopt-on-modify
+  -> re-gate -> execute stub, with the audit trail as the output:
+      python -m finops_governor "500 arm variations" --budget 50 [--audit audit.json]
+      exit: 0 = EXECUTED, 2 = BLOCKED, 3 = FAILED or invalid input
+      (there is no exit 1 in plan mode: MODIFY is adopted automatically - the gate's
+      proposal becomes the plan, deterministically, per ADR 0007/0008)
 
-In plan mode the LLM proposes and the same deterministic Governor disposes - a generated
-plan gets no special treatment. Exit code mirrors the verdict so the CLI composes into
-pipelines like the gate it is: 0 = APPROVE, 1 = MODIFY, 2 = BLOCK, 3 = invalid input or
-planning failure.
+--save writes the FINAL plan (as it would run, post-adoption); --audit writes the full
+terminal PipelineState - the dollars-saved receipt.
 """
 
 import argparse
@@ -26,10 +27,16 @@ from pydantic import ValidationError
 from finops_governor.estimator import GpuRenderCostModel, HardwareProfile, get_profile
 from finops_governor.gate.decision import GateDecision, Verdict
 from finops_governor.governor import Governor
-from finops_governor.planner import Planner, PlannerError, PlannerModel
+from finops_governor.orchestration import PipelineState, PipelineStatus, Orchestrator
+from finops_governor.planner import Planner, PlannerModel
 from finops_governor.schemas import GenerationPlan
 
 _EXIT = {Verdict.APPROVE: 0, Verdict.MODIFY: 1, Verdict.BLOCK: 2}
+_EXIT_STATUS = {
+    PipelineStatus.EXECUTED: 0,
+    PipelineStatus.BLOCKED: 2,
+    PipelineStatus.FAILED: 3,
+}
 
 
 def main(
@@ -39,31 +46,34 @@ def main(
         prog="finops-governor",
         description=(
             "Pre-flight gate for training-value-per-GPU-dollar: evaluates a "
-            "GenerationPlan (or plans one from natural language with --budget) and "
-            "decides approve / modify / block before any GPU spend."
+            "GenerationPlan (or runs the full plan->gate->execute pipeline from "
+            "natural language with --budget) before any GPU spend."
         ),
     )
     parser.add_argument(
         "target",
         help=(
             "path to a GenerationPlan JSON file; or, with --budget, a natural-language "
-            "request to plan"
+            "request"
         ),
     )
     parser.add_argument(
         "--budget",
         type=float,
         default=None,
-        help=(
-            "plan mode: treat TARGET as a natural-language request and generate a plan "
-            "with this budget ceiling (USD)"
-        ),
+        help="plan mode: treat TARGET as a request; run the full pipeline under this budget (USD)",
     )
     parser.add_argument(
         "--save",
         default=None,
         metavar="PATH",
-        help="plan mode: also write the generated plan JSON to PATH",
+        help="plan mode: write the final plan (as it would run) to PATH",
+    )
+    parser.add_argument(
+        "--audit",
+        default=None,
+        metavar="PATH",
+        help="plan mode: write the full audit trail (terminal pipeline state) to PATH",
     )
     parser.add_argument(
         "--profile",
@@ -86,28 +96,96 @@ def main(
         print(f"error: unknown hardware profile: {args.profile}", file=sys.stderr)
         return 3
 
-    if args.budget is not None:
-        plan = _plan_from_request(args.target, args.budget, planner_model, args.save)
-        if plan is None:
-            return 3
-    else:
-        plan = _load_plan_file(args.target)
-        if plan is None:
-            return 3
-
     cost_model = GpuRenderCostModel(profile)
     governor = (
         Governor.with_all_checks(cost_model)
         if args.geometry
         else Governor.with_default_checks(cost_model)
     )
+
+    if args.budget is not None:
+        return _run_pipeline(args, profile, governor, planner_model)
+
+    if args.audit is not None:
+        print("error: --audit requires plan mode (--budget)", file=sys.stderr)
+        return 3
+
+    plan = _load_plan_file(args.target)
+    if plan is None:
+        return 3
     decision = governor.evaluate(plan)
     _print_decision(plan, profile, decision)
     return _EXIT[decision.verdict]
 
 
 # ---------------------------------------------------------------------- #
-# Modes
+# Plan mode: the full pipeline (M7)
+# ---------------------------------------------------------------------- #
+
+
+def _run_pipeline(
+    args: argparse.Namespace,
+    profile: HardwareProfile,
+    governor: Governor,
+    planner_model: PlannerModel | None,
+) -> int:
+    if planner_model is None:
+        # Deferred: only plan mode needs the SDK (and a key at request time).
+        from finops_governor.planner import AnthropicPlannerModel
+
+        planner_model = AnthropicPlannerModel()
+
+    print(f'pipeline:  "{args.target}"  (budget ${args.budget:,.2f}, {profile.name})')
+    orchestrator = Orchestrator(Planner(planner_model), governor)
+    try:
+        final = orchestrator.run(args.target, budget_usd=args.budget)
+    except Exception as exc:  # SDK errors: missing ANTHROPIC_API_KEY, network, auth
+        print(
+            f"error: model call failed ({type(exc).__name__}: {exc}). "
+            "Is ANTHROPIC_API_KEY set?",
+            file=sys.stderr,
+        )
+        return 3
+
+    for event in final.events:
+        axes = f" [{', '.join(event.driving_axes)}]" if event.driving_axes else ""
+        print(f"  {event.sequence + 1}. {event.node:8s}{axes} {event.summary}")
+
+    print(f"status:    {final.status.value}")
+    savings = _savings(final)
+    if final.status is PipelineStatus.EXECUTED and final.decision is not None:
+        line = (
+            f"final:     ${final.decision.estimate.total_usd:,.2f} of "
+            f"${final.budget_usd:,.2f} budget"
+        )
+        if savings > 0:
+            line += f" (${savings:,.2f} of predictably wasted spend removed)"
+        print(line)
+    if final.status is PipelineStatus.FAILED and final.error is not None:
+        print(f"error: {final.error}", file=sys.stderr)
+
+    if args.save is not None and final.plan is not None:
+        Path(args.save).write_text(final.plan.model_dump_json(indent=2) + "\n")
+        print(f"saved:     {args.save}")
+    if args.audit is not None:
+        Path(args.audit).write_text(final.model_dump_json(indent=2) + "\n")
+        print(f"audit:     {args.audit}")
+
+    return _EXIT_STATUS[final.status]
+
+
+def _savings(final: PipelineState) -> float:
+    """Dollars removed by adoption: first gate estimate minus final estimate."""
+    if final.decision is None or not any(e.node == "adopt" for e in final.events):
+        return 0.0
+    first_gate = next(e for e in final.events if e.node == "gate")
+    if first_gate.estimated_usd is None:
+        return 0.0  # pragma: no cover
+    return first_gate.estimated_usd - final.decision.estimate.total_usd
+
+
+# ---------------------------------------------------------------------- #
+# Evaluate mode: one gate pass (unchanged contract)
 # ---------------------------------------------------------------------- #
 
 
@@ -121,46 +199,6 @@ def _load_plan_file(path_str: str) -> GenerationPlan | None:
     except (json.JSONDecodeError, ValidationError) as exc:
         print(f"error: not a valid GenerationPlan: {exc}", file=sys.stderr)
         return None
-
-
-def _plan_from_request(
-    request: str,
-    budget_usd: float,
-    planner_model: PlannerModel | None,
-    save_path: str | None,
-) -> GenerationPlan | None:
-    if planner_model is None:
-        # Deferred: only plan mode needs the SDK (and a key at request time).
-        from finops_governor.planner import AnthropicPlannerModel
-
-        planner_model = AnthropicPlannerModel()
-
-    print(f'planning:  "{request}"')
-    try:
-        plan = Planner(planner_model).plan(request, budget_usd=budget_usd)
-    except PlannerError as exc:
-        print(f"error: planning failed: {exc}", file=sys.stderr)
-        return None
-    except Exception as exc:  # SDK errors: missing ANTHROPIC_API_KEY, network, auth
-        print(
-            f"error: model call failed ({type(exc).__name__}: {exc}). "
-            "Is ANTHROPIC_API_KEY set?",
-            file=sys.stderr,
-        )
-        return None
-
-    scenes = ", ".join(f"{s.scene_id} x{s.variation_count}" for s in plan.scenes)
-    print(f"planned:   {plan.plan_id} ({scenes})")
-
-    if save_path is not None:
-        Path(save_path).write_text(plan.model_dump_json(indent=2) + "\n")
-        print(f"saved:     {save_path}")
-    return plan
-
-
-# ---------------------------------------------------------------------- #
-# Output
-# ---------------------------------------------------------------------- #
 
 
 def _print_decision(
