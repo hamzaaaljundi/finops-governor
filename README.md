@@ -19,10 +19,11 @@ the model almost nothing.
 ## Try it
 
 ```bash
-# English in, verdict out: the LLM plans, the deterministic gate decides
+# English in, governed job out: the LLM plans, the deterministic gate decides,
+# waste is trimmed and adopted automatically, and the audit trail is the receipt
 # (needs ANTHROPIC_API_KEY)
-python -m finops_governor "500 variations of a robotic arm on an assembly floor, \
-RGB and depth" --budget 50 --save plan.json
+python -m finops_governor "50,000 variations of a robotic arm on an assembly \
+floor, RGB and depth" --budget 1000 --audit audit.json
 
 # a $373 job that is ~100% redundant -> flagged in dollars AND handed back
 # as a 26-variation, $0.20 proposal at the same expected-coverage bar (exit 1)
@@ -32,8 +33,9 @@ python -m finops_governor fixtures/diversity/redundant/production_scale.json
 python -m finops_governor fixtures/geometry/floor_clip_scene.json --geometry
 ```
 
-Exit codes mirror the verdict (0 = APPROVE, 1 = MODIFY, 2 = BLOCK), so the CLI composes
-into pipelines like the gate it is.
+Exit codes compose into pipelines: evaluate mode mirrors the verdict (0 = APPROVE,
+1 = MODIFY, 2 = BLOCK); plan mode mirrors the terminal state (0 = EXECUTED,
+2 = BLOCKED, 3 = FAILED) - MODIFY never terminates the pipeline, it is adopted.
 
 ## How it works
 
@@ -41,15 +43,17 @@ into pipelines like the gate it is.
 flowchart TD
     A[NL Request] --> B[Planning Agent - LLM]
     B --> C[GenerationPlan]
-    C --> D[Cost Estimator]
-    D --> E[Governor - multi-axis gate]
-    E --> F{Compose findings}
-    F -->|approve| G[Execution Stub]
-    F -->|modify| B
-    F -->|block| H[Halt + Log]
-    G --> I[Audit Log]
+    C --> E[Governor - multi-axis gate]
+    E -->|approve| G[Execution Stub]
+    E -->|modify| M[Adopt the gate's proposal]
+    M --> E
+    E -->|block| H[Halt - governance success]
+    G --> I[Audit Trail]
     H --> I
 ```
+
+Every step appends an audit event; the trail records which axis drove each decision and
+what adoption saved - the audit log of a governed job is the dollars-saved receipt.
 
 The **planner** turns natural language into a `GenerationPlan`, forced through a strict
 schema with a bounded repair loop - the LLM's output is untrusted until validated, and
@@ -64,6 +68,13 @@ When a plan is recoverable, the proposal is built in two ordered passes (ADR 000
 **value first** - scenes are trimmed to their expected-coverage-justified variation
 counts, removing only predictably redundant frames - then **budget** only if the plan
 still exceeds its ceiling. Never cut signal while waste remains.
+
+The **orchestrator** (M7) runs the whole loop as pure node functions over one typed,
+immutable state - plain Python, deliberately LangGraph-isomorphic (ADR 0008: the
+framework is deferred with a named threshold). MODIFY is adopted deterministically -
+the gate already built the cheaper, coverage-preserving plan, so no LLM round-trip is
+spent rediscovering it - and convergence in exactly one extra gate pass is a verified,
+bounded invariant.
 
 | Axis | Question | Catches |
 |---|---|---|
@@ -94,7 +105,10 @@ images.
 - **M6.5** (`v0.6.5-value-gate`): **the gate acts on the waste it prices** - expected-
   coverage diversity model (coupon-collector), cost-per-distinct metric, value-aware
   modification (ADR 0007), adversarial prompt-injection suite, mypy in CI.
-- **Next: M7 - orchestration + audit trail** (the plan -> gate -> verdict state machine).
+- **M7** (`v0.7-orchestration`): the pipeline - node-functions-over-typed-state
+  orchestrator (plain Python, ADR 0008), adopt-on-modify with a verified convergence
+  bound, and the structured audit trail with per-decision axis attribution.
+- **Next: M8 - service, packaging, demo** (`v1.0`).
 
 See [ROADMAP.md](./ROADMAP.md) for the full plan, [docs/](./docs/) for design specs, and
 [docs/adr/](./docs/adr/) for architecture decisions.

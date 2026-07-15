@@ -63,13 +63,19 @@ downstream model training; validating rendered output images.
   job comes back as a $0.20 same-coverage proposal; a named adversarial prompt-injection
   suite attacking the trust boundary; mypy (strict settings) added to CI.
 
+- **M7 - Orchestration + audit trail** (`v0.7-orchestration`). The pipeline as pure
+  node functions over one typed, immutable state (plain Python; ADR 0008 evaluates
+  LangGraph and defers it with a named threshold - HITL checkpointing, parallel slow
+  nodes - and a structural one-day port path). Modify strategy: adopt the gate's own
+  proposal (deterministic; convergence in exactly one extra gate pass verified for all
+  three modify shapes), bounded loudly at max_gate_passes. Terminal states EXECUTED /
+  BLOCKED / FAILED - blocked is a governance success, not a failure. The audit trail is
+  the deliverable: one frozen, serializable event per node with per-decision
+  driving-axis attribution and adoption savings - the dollars-saved receipt. CLI plan
+  mode runs the full pipeline (--audit saves the trail).
+
 ### Remaining
 
-- **M7 - Orchestration + audit trail** (`v0.7-orchestration`). Wire plan -> estimate ->
-  gate -> verdict -> execute into a state machine with a re-plan loop on modify, and a
-  structured audit log recording which axis drove each decision. LangGraph is the natural
-  fit (state machine); plain Python is a defensible alternative - decided deliberately at
-  milestone start.
 - **M8 - Service, packaging, demo** (`v1.0`). FastAPI endpoint, `pip install` polish, a
   shipped sample stage, and a README demo (GIF) showing the combined verdict on a real
   job. The CLI itself shipped early, at M5, and gained plan mode at M6.
