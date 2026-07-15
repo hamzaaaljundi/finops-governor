@@ -140,3 +140,49 @@ def test_pure_read_does_not_mutate_plan(model):
     before = ctx.plan.model_dump()
     DiversityCheck().check(ctx)
     assert ctx.plan.model_dump() == before
+
+
+# --- declaration plausibility (M8 pre-work: trust made visible) ---
+
+
+def test_honest_declarations_produce_no_plausibility_warning(model):
+    assert DiversityCheck().check(_context(model, 500, [12, 5, 8])) == []
+
+
+def test_implausible_per_parameter_levels_warn(model):
+    findings = DiversityCheck().check(_context(model, 50_000, [500, 100]))
+    assert len(findings) == 1
+    f = findings[0]
+    assert f.severity is Severity.WARNING
+    assert f.detail["kind"] == "implausible_levels"
+    assert "plausibility" in f.reason
+
+
+def test_capacity_oversupply_warns(model):
+    # 64,000 declared configurations for 50 draws: trust doing heavy lifting
+    findings = DiversityCheck().check(_context(model, 50, [40, 40, 40]))
+    assert len(findings) == 1
+    assert findings[0].severity is Severity.WARNING
+    assert findings[0].detail["kind"] == "capacity_oversupply"
+
+
+def test_plausibility_and_redundancy_can_co_fire(model):
+    findings = DiversityCheck().check(_context(model, 5000, [200, 1]))
+    severities = {f.severity for f in findings}
+    assert severities == {Severity.WARNING, Severity.MODIFIABLE}
+
+
+def test_plausibility_thresholds_are_tunable(model):
+    ctx = _context(model, 50_000, [500, 100])
+    relaxed = DiversityCheck(plausible_max_levels=1000, plausible_capacity_factor=1e9)
+    assert relaxed.check(ctx) == []
+
+
+def test_plausibility_warning_never_changes_the_verdict(model):
+    from finops_governor.gate import Verdict
+    from finops_governor.governor import Governor
+
+    governor = Governor.with_default_checks(model)
+    decision = governor.evaluate(_context(model, 50_000, [500, 100]).plan)
+    assert decision.verdict is Verdict.APPROVE  # warning recorded, never enforced
+    assert "plausibility" in decision.reason

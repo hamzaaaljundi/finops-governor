@@ -75,6 +75,7 @@ entirely in the honest region near capacity, where v1 was blind.
 | 4 | Threshold | **redundant_fraction > 0.5** (tunable) | Fire when more than half the spend is expected redundant; some oversampling is legitimate. |
 | 5 | No randomization declared | **No finding** | You cannot judge coverage that was never declared. The check refuses to guess. |
 | 6 | Granularity | **Per scene** | `variation_count` and `randomization` are per-scene; findings are too. |
+| 7 | Declaration plausibility | **WARNING** when a parameter claims > 64 levels or capacity exceeds variations by 100x (both tunable) | Makes the declared-input trust visible in the verdict and audit trail; never enforced, because a declaration cannot be proven dishonest pre-execution. |
 
 ## 4. Worked examples (verified against the real cost model, A10G)
 
@@ -116,7 +117,11 @@ and therefore its limits - are stated plainly:
    against adversarial or sloppy declarations. A production version would add
    plausibility checks on declared ranges (is 1,000 lighting levels physically
    meaningful?) or derive effective levels from the executor's actual sampler rather
-   than the planner's claim.
+   than the planner's claim. As of M8 pre-work, egregious declarations (a parameter
+   claiming > 64 levels; capacity exceeding variations by 100x) draw a plausibility
+   WARNING - trust made visible in the verdict, not only here. This narrows the
+   circularity; it does not close it: a planner declaring plausible-looking inflated
+   levels still passes.
 
 **What a production version would need:** modeling parameter correlations; sampler-aware
 coverage (reading the executor's actual sampling strategy instead of assuming uniform);
