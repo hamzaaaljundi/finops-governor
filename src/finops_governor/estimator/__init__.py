@@ -21,4 +21,5 @@ __all__ = [
     "get_default_profile",
     "get_profile",
     "load_profiles",
+    "load_profiles",
 ]

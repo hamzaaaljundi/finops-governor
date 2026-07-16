@@ -24,6 +24,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from finops_governor.advisor import advise
 from finops_governor.estimator import GpuRenderCostModel, HardwareProfile, get_profile
 from finops_governor.gate.decision import GateDecision, Verdict
 from finops_governor.governor import Governor
@@ -76,6 +77,11 @@ def main(
         help="plan mode: write the full audit trail (terminal pipeline state) to PATH",
     )
     parser.add_argument(
+        "--advise",
+        action="store_true",
+        help="also rank all hardware profiles by this job's cost and recommend the cheapest",
+    )
+    parser.add_argument(
         "--profile",
         default="a10g",
         help="hardware profile for the cost model (default: a10g)",
@@ -115,6 +121,8 @@ def main(
         return 3
     decision = governor.evaluate(plan)
     _print_decision(plan, profile, decision)
+    if args.advise:
+        _print_advice(plan)
     return _EXIT[decision.verdict]
 
 
@@ -163,6 +171,9 @@ def _run_pipeline(
         print(line)
     if final.status is PipelineStatus.FAILED and final.error is not None:
         print(f"error: {final.error}", file=sys.stderr)
+
+    if args.advise and final.plan is not None:
+        _print_advice(final.plan)
 
     if args.save is not None and final.plan is not None:
         Path(args.save).write_text(final.plan.model_dump_json(indent=2) + "\n")
@@ -219,6 +230,26 @@ def _print_decision(
         print(
             f"proposal:  fits budget at ${decision.modified_estimate.total_usd:,.2f} "
             f"({'; '.join(decision.modifications)})"
+        )
+
+
+def _print_advice(plan: GenerationPlan) -> None:
+    advice = advise(plan)
+    print("advice:    cheapest hardware for this job:")
+    for row in advice.ranking:
+        marker = (
+            "  <- recommended"
+            if row.profile_id == advice.recommended_profile_id
+            else ""
+        )
+        print(
+            f"             {row.profile_id:6s} ${row.total_usd:,.2f}  "
+            f"({row.gpu_hours:.2f} GPU-hours @ ${row.price_per_hour_usd}/h){marker}"
+        )
+    if advice.max_savings_usd > 0:
+        print(
+            f"             picking the most expensive would cost "
+            f"${advice.max_savings_usd:,.2f} more"
         )
 
 
