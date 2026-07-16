@@ -74,9 +74,23 @@ downstream model training; validating rendered output images.
   driving-axis attribution and adoption savings - the dollars-saved receipt. CLI plan
   mode runs the full pipeline (--audit saves the trail).
 
+- **M8 - Service, packaging, demo** (`v1.0`). Declaration-plausibility warnings
+  (the declared-input trust made visible in the verdict); the hardware profile advisor
+  (the mid-tier-wins punchline as a feature: library, CLI `--advise`, API); the FastAPI
+  service - five endpoints, the M1/M7 contracts as the API contracts verbatim, HTTP
+  codes describe the transaction and never the verdict; v1.0 packaging with a
+  `finops-governor` console entry point, published to TestPyPI; a reproducible VHS
+  demo (the GIF is generated from `demo/demo.tape`, never hand-recorded).
+
 ### Remaining
 
-- **M8 - Service, packaging, demo** (`v1.0`). FastAPI endpoint, `pip install` polish, a
+- **M9 (post-v1.0) - Make it real.** Calibrate the render constants against a measured
+  Isaac Sim run on the reference GPU (rented g5.xlarge A10G, ~one day); a thin
+  plan-to-Replicator adapter and a real-frames demo video - the governor fronting the
+  actual industry stack. Candidate extensions beyond M9, in docs and ADRs: a
+  human-in-the-loop approval checkpoint (the ADR 0008 threshold, LangGraph's home
+  ground) and portfolio governance (allocating one budget across N candidate jobs by
+  expected coverage per dollar). FastAPI endpoint, `pip install` polish, a
   shipped sample stage, and a README demo (GIF) showing the combined verdict on a real
   job. The CLI itself shipped early, at M5, and gained plan mode at M6.
 
@@ -94,7 +108,7 @@ downstream model training; validating rendered output images.
 | `v0.6-planner` | M6 | NL -> valid plan, judged by the same gate |
 | `v0.6.5-value-gate` | M6.5 | **The gate removes the waste it prices** |
 | `v0.7-orchestration` | M7 | End-to-end, multi-axis audit trail |
-| `v1.0` | M8 | Runnable tool + demo of the value thesis |
+| `v1.0` | M8 | **Runnable, installable, served, demonstrated** |
 
 The commit history tells the argument: deterministic spine first, headline innovation
 before the risky milestone, LLM last.
