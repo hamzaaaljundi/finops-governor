@@ -4,22 +4,36 @@ build-backend = "hatchling.build"
 
 [project]
 name = "finops-governor"
-version = "0.1.0"
-description = "An agentic system for validating and estimating synthetic data generation pipelines."
+version = "1.0.0"
+description = "Pre-flight gate for training-value-per-GPU-dollar in synthetic-data pipelines: an LLM plans, a deterministic multi-axis gate decides - budget, expected-coverage diversity, and USD geometric validity - before any GPU spend."
 readme = "README.md"
 requires-python = ">=3.11"
-authors = [
-    { name = "Hamza AlJundi" }
+license = { text = "MIT" }
+authors = [{ name = "Hamza AlJundi" }]
+keywords = [
+    "finops",
+    "synthetic-data",
+    "gpu-cost",
+    "domain-randomization",
+    "openusd",
+    "digital-twin",
+    "llm-governance",
 ]
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: System :: Monitoring",
 ]
 dependencies = [
     "pydantic>=2.0",
     "usd-core>=25",
     "anthropic>=0.40",
-    "mypy>=1.14",
     "fastapi>=0.115",
     "uvicorn>=0.30",
 ]
@@ -28,11 +42,28 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
+    "mypy>=1.14",
     "httpx2",
 ]
 
+[project.scripts]
+finops-governor = "finops_governor.cli:main"
+
+[project.urls]
+Repository = "https://github.com/hamzaaljundi/finops-governor"
+Documentation = "https://github.com/hamzaaljundi/finops-governor/tree/main/docs"
+Changelog = "https://github.com/hamzaaljundi/finops-governor/releases"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/finops_governor"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
 [tool.mypy]
 files = ["src"]
 python_version = "3.11"
