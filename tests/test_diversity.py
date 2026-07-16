@@ -128,9 +128,7 @@ def test_finding_quantifies_dollars_and_unit_price(model):
     findings = DiversityCheck().check(_context(model, 5000, [12, 8]))
     detail = findings[0].detail
     assert detail["estimated_wasted_usd"] > 0
-    assert (
-        detail["effective_cost_per_distinct_usd"] > detail["nominal_cost_per_image_usd"]
-    )
+    assert detail["effective_cost_per_distinct_usd"] > detail["nominal_cost_per_image_usd"]
     assert detail["capacity"] == 96.0
     assert "distinct configuration" in findings[0].reason
 

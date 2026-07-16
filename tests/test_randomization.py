@@ -30,9 +30,7 @@ def _scene(**overrides):
 
 
 def test_parameter_valid():
-    p = RandomizationParameter(
-        name="camera.azimuth", levels=12, min_value=0, max_value=360
-    )
+    p = RandomizationParameter(name="camera.azimuth", levels=12, min_value=0, max_value=360)
     assert p.levels == 12
 
 
@@ -68,9 +66,7 @@ def test_scene_randomization_is_optional():
 
 def test_scene_with_randomization():
     scene = _scene(
-        randomization=Randomization(
-            parameters=[RandomizationParameter(name="light", levels=5)]
-        )
+        randomization=Randomization(parameters=[RandomizationParameter(name="light", levels=5)])
     )
     assert scene.randomization.parameters[0].levels == 5
 
@@ -83,9 +79,7 @@ def test_plan_with_randomization_round_trips():
                 randomization=Randomization(
                     parameters=[
                         RandomizationParameter(name="a", levels=3),
-                        RandomizationParameter(
-                            name="b", levels=4, min_value=0, max_value=1
-                        ),
+                        RandomizationParameter(name="b", levels=4, min_value=0, max_value=1),
                     ]
                 )
             )

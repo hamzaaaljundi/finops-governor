@@ -36,9 +36,7 @@ def _plan(
     scene = {
         "scene_id": "station",
         "environment": {"asset_id": "floor", "usd_path": str(USD / stage)},
-        "assets": [
-            {"asset_id": a, "usd_path": str(USD / stage)} for a in ("arm", "box")
-        ],
+        "assets": [{"asset_id": a, "usd_path": str(USD / stage)} for a in ("arm", "box")],
         "cameras": [
             {
                 "camera_id": "cam",

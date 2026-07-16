@@ -53,9 +53,7 @@ def _plan_dict(budget: float = 50.0, variation_count: int = 10) -> dict:
 
 def _redundant_plan() -> GenerationPlan:
     return GenerationPlan.model_validate(
-        json.loads(
-            (FIXTURES / "diversity" / "redundant" / "production_scale.json").read_text()
-        )
+        json.loads((FIXTURES / "diversity" / "redundant" / "production_scale.json").read_text())
     )
 
 
@@ -97,9 +95,7 @@ def test_gate_node_approve(governor):
 
 
 def test_gate_node_modify_attributes_the_diversity_axis(governor):
-    s1 = gate_node(
-        PipelineState(budget_usd=1_000_000.0, plan=_redundant_plan()), governor
-    )
+    s1 = gate_node(PipelineState(budget_usd=1_000_000.0, plan=_redundant_plan()), governor)
     assert s1.decision.verdict is Verdict.MODIFY
     assert s1.events[-1].driving_axes == ("diversity",)
 
@@ -121,9 +117,7 @@ def test_gate_node_requires_a_plan(governor):
 
 
 def test_adopt_node_swaps_in_the_proposal_and_clears_the_decision(governor):
-    s1 = gate_node(
-        PipelineState(budget_usd=1_000_000.0, plan=_redundant_plan()), governor
-    )
+    s1 = gate_node(PipelineState(budget_usd=1_000_000.0, plan=_redundant_plan()), governor)
     s2 = adopt_node(s1)
     assert s2.plan.scenes[0].variation_count == 26  # the justified count
     assert s2.decision is None  # stale decision cleared
@@ -152,9 +146,7 @@ def test_execute_node_records_the_job_and_finishes(governor):
 
 
 def test_execute_node_requires_an_approve_decision(governor):
-    s1 = gate_node(
-        PipelineState(budget_usd=1_000_000.0, plan=_redundant_plan()), governor
-    )
+    s1 = gate_node(PipelineState(budget_usd=1_000_000.0, plan=_redundant_plan()), governor)
     with pytest.raises(OrchestrationError, match="APPROVE"):
         execute_node(s1)
 
@@ -163,17 +155,13 @@ def test_execute_node_requires_an_approve_decision(governor):
 
 
 def test_route_full_mapping(governor):
-    fresh = PipelineState(
-        budget_usd=50.0, plan=GenerationPlan.model_validate(_plan_dict())
-    )
+    fresh = PipelineState(budget_usd=50.0, plan=GenerationPlan.model_validate(_plan_dict()))
     assert route(fresh) == "gate"
 
     approved = gate_node(fresh, governor)
     assert route(approved) == "execute"
 
-    modify = gate_node(
-        PipelineState(budget_usd=1_000_000.0, plan=_redundant_plan()), governor
-    )
+    modify = gate_node(PipelineState(budget_usd=1_000_000.0, plan=_redundant_plan()), governor)
     assert route(modify) == "adopt"
     assert route(adopt_node(modify)) == "gate"  # the regression: never adopt twice
 

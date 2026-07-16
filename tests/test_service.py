@@ -126,13 +126,9 @@ def test_advise_recommends_the_cheapest(client):
 
 
 def test_pipeline_executes_and_returns_the_trail():
-    fake = FakePlannerModel(
-        [json.dumps(_plan_dict(variation_count=50_000, levels=[4, 4]))]
-    )
+    fake = FakePlannerModel([json.dumps(_plan_dict(variation_count=50_000, levels=[4, 4]))])
     client = TestClient(create_app(planner_model=fake))
-    r = client.post(
-        "/pipeline", json={"request": "50k arm variations", "budget_usd": 1000.0}
-    )
+    r = client.post("/pipeline", json={"request": "50k arm variations", "budget_usd": 1000.0})
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "EXECUTED"

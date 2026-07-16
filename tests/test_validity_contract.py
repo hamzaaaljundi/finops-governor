@@ -21,9 +21,7 @@ FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "plans" / "valid"
 
 @pytest.fixture(scope="module")
 def context() -> CheckContext:
-    plan = GenerationPlan.model_validate(
-        json.loads((FIXTURES / "minimal.json").read_text())
-    )
+    plan = GenerationPlan.model_validate(json.loads((FIXTURES / "minimal.json").read_text()))
     estimate = GpuRenderCostModel(get_profile("a10g")).estimate(plan)
     return CheckContext(plan=plan, cost_estimate=estimate)
 

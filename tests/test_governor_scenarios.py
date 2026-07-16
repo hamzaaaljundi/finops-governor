@@ -80,33 +80,23 @@ class _MockAxis:
     def check(self, context: CheckContext) -> list[Finding]:
         if self._severity is None:
             return []
-        return [
-            Finding(
-                check_name=self.name, severity=self._severity, reason=f"{self.name}!"
-            )
-        ]
+        return [Finding(check_name=self.name, severity=self._severity, reason=f"{self.name}!")]
 
 
 def _multi_axis_governor(model, severity: Severity | None) -> Governor:
     modifier = PlanModifier(model)
-    return Governor(
-        model, [CostCheck(modifier), _MockAxis("geometry", severity)], modifier
-    )
+    return Governor(model, [CostCheck(modifier), _MockAxis("geometry", severity)], modifier)
 
 
 def test_affordable_plan_blocked_by_second_axis(model):
     # cost is clean, geometry blocks -> BLOCK end-to-end
-    d = _multi_axis_governor(model, Severity.BLOCKING).evaluate(
-        _load(_cases("approve")[0])
-    )
+    d = _multi_axis_governor(model, Severity.BLOCKING).evaluate(_load(_cases("approve")[0]))
     assert d.verdict is Verdict.BLOCK
     assert "geometry" in d.reason
 
 
 def test_second_axis_warning_still_approves(model):
-    d = _multi_axis_governor(model, Severity.WARNING).evaluate(
-        _load(_cases("approve")[0])
-    )
+    d = _multi_axis_governor(model, Severity.WARNING).evaluate(_load(_cases("approve")[0]))
     assert d.verdict is Verdict.APPROVE
     assert "geometry" in d.reason  # recorded, not decisive
 

@@ -42,9 +42,7 @@ class HardwareProfile(StrictModel):
 
 def load_profiles() -> dict[str, HardwareProfile]:
     """Load and validate every hardware profile from the bundled data file."""
-    raw = (
-        resources.files(_DATA_PACKAGE).joinpath(_DATA_FILE).read_text(encoding="utf-8")
-    )
+    raw = resources.files(_DATA_PACKAGE).joinpath(_DATA_FILE).read_text(encoding="utf-8")
     data = json.loads(raw)
     return {key: HardwareProfile.model_validate(value) for key, value in data.items()}
 
@@ -56,9 +54,7 @@ def get_profile(profile_id: str) -> HardwareProfile:
         return profiles[profile_id]
     except KeyError:
         valid = ", ".join(sorted(profiles))
-        raise KeyError(
-            f"Unknown hardware profile '{profile_id}'. Available: {valid}."
-        ) from None
+        raise KeyError(f"Unknown hardware profile '{profile_id}'. Available: {valid}.") from None
 
 
 def get_default_profile() -> HardwareProfile:

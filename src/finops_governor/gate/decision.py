@@ -53,9 +53,7 @@ class GateDecision(StrictModel):
             if carries_mod:
                 raise ValueError("APPROVE must not carry a modification.")
             if self.estimate.total_usd > self.budget_usd:
-                raise ValueError(
-                    "APPROVE requires the estimated cost to be within budget."
-                )
+                raise ValueError("APPROVE requires the estimated cost to be within budget.")
         elif self.verdict is Verdict.BLOCK:
             if carries_mod:
                 raise ValueError("BLOCK must not carry a modification.")
@@ -65,9 +63,7 @@ class GateDecision(StrictModel):
             if not self.modifications:
                 raise ValueError("MODIFY requires a description of the changes.")
             if self.modified_estimate.total_usd > self.budget_usd:
-                raise ValueError(
-                    "MODIFY requires the modified estimate to be within budget."
-                )
+                raise ValueError("MODIFY requires the modified estimate to be within budget.")
         return self
 
     # --- factories: readable, guaranteed-valid construction at the gate ---
@@ -81,8 +77,7 @@ class GateDecision(StrictModel):
         reason: str | None = None,
     ) -> "GateDecision":
         reason = reason or (
-            f"Estimated ${estimate.total_usd:.2f} is within the "
-            f"${budget_usd:.2f} budget."
+            f"Estimated ${estimate.total_usd:.2f} is within the ${budget_usd:.2f} budget."
         )
         return cls(
             verdict=Verdict.APPROVE,

@@ -54,8 +54,7 @@ def test_redundant_scenarios_warn_with_dollar_waste(model, path):
     assert all(f.detail["redundant_fraction"] > 0.5 for f in findings)
     assert all(f.detail["estimated_wasted_usd"] > 0 for f in findings)
     assert all(
-        f.detail["effective_cost_per_distinct_usd"]
-        > f.detail["nominal_cost_per_image_usd"]
+        f.detail["effective_cost_per_distinct_usd"] > f.detail["nominal_cost_per_image_usd"]
         for f in findings
     )
 

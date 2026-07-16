@@ -88,9 +88,7 @@ def test_check_does_not_mutate_the_plan(model, check):
         ("multi_scene.json", 0.001, Verdict.BLOCK, Severity.BLOCKING),
     ],
 )
-def test_findings_mirror_m2_gate(
-    model, check, name, budget, expected_verdict, expected_severity
-):
+def test_findings_mirror_m2_gate(model, check, name, budget, expected_verdict, expected_severity):
     ctx = _context(model, name, budget)
     gate = BudgetGate(model, PlanModifier(model))
     verdict = gate.evaluate(ctx.plan).verdict

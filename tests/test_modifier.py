@@ -59,8 +59,7 @@ def test_proportions_preserved(modifier):
     plan = _plan_with_budget("multi_scene.json", 0.20)
     proposal = modifier.propose(plan, 0.20)
     reduced = [
-        m.variation_count < o.variation_count
-        for o, m in zip(plan.scenes, proposal.plan.scenes)
+        m.variation_count < o.variation_count for o, m in zip(plan.scenes, proposal.plan.scenes)
     ]
     assert all(reduced)
 

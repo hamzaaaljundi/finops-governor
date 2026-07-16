@@ -29,9 +29,7 @@ def _plan_json(
                     "cameras": [{"camera_id": "cam", "transform": {}}],
                     "variation_count": variation_count,
                     "randomization": {
-                        "parameters": [
-                            {"name": f"p{i}", "levels": v} for i, v in enumerate(levels)
-                        ]
+                        "parameters": [{"name": f"p{i}", "levels": v} for i, v in enumerate(levels)]
                     },
                 }
             ],

@@ -38,10 +38,7 @@ def _plan(
                     "asset_id": "floor",
                     "usd_path": str(USD_FIXTURES / stage),
                 },
-                "assets": [
-                    {"asset_id": a, "usd_path": str(USD_FIXTURES / stage)}
-                    for a in assets
-                ],
+                "assets": [{"asset_id": a, "usd_path": str(USD_FIXTURES / stage)} for a in assets],
                 "cameras": [
                     {
                         "camera_id": "cam",
@@ -101,10 +98,7 @@ def test_missing_stage_blocks(model):
     findings = _findings(model, _plan("does_not_exist.usda"))
     assert len(findings) == 1
     assert findings[0].severity is Severity.BLOCKING
-    assert (
-        "cannot be opened" in findings[0].reason
-        or "does not resolve" in findings[0].reason
-    )
+    assert "cannot be opened" in findings[0].reason or "does not resolve" in findings[0].reason
 
 
 def test_missing_asset_blocks_but_others_still_checked(model):
@@ -138,8 +132,7 @@ def test_multi_scene_flags_only_the_broken_scene(model):
                 "usd_path": str(USD_FIXTURES / stage),
             },
             "assets": [
-                {"asset_id": a, "usd_path": str(USD_FIXTURES / stage)}
-                for a in ("arm", "box")
+                {"asset_id": a, "usd_path": str(USD_FIXTURES / stage)} for a in ("arm", "box")
             ],
             "cameras": [
                 {
@@ -150,9 +143,7 @@ def test_multi_scene_flags_only_the_broken_scene(model):
             "variation_count": 10,
         }
 
-    plan = _plan(
-        "", scenes=[scene("good", "valid.usda"), scene("bad", "floor_clip.usda")]
-    )
+    plan = _plan("", scenes=[scene("good", "valid.usda"), scene("bad", "floor_clip.usda")])
     findings = _findings(model, plan)
     assert len(findings) == 1
     assert findings[0].detail["scene_id"] == "bad"

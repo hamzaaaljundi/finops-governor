@@ -130,9 +130,7 @@ class Governor:
     ) -> tuple[GenerationPlan, CostEstimate, list[str]]:
         # Pass 1 - VALUE: trim flagged scenes to their justified counts.
         candidate, value_mods = self._value_trim(plan, report)
-        candidate_estimate = (
-            self._cost_model.estimate(candidate) if value_mods else estimate
-        )
+        candidate_estimate = self._cost_model.estimate(candidate) if value_mods else estimate
 
         # Pass 2 - BUDGET: only if the value-trimmed plan still exceeds the budget.
         if candidate_estimate.total_usd <= budget:
@@ -164,9 +162,7 @@ class Governor:
                 and f.severity is Severity.MODIFIABLE
                 and f.detail is not None
             ):
-                targets[str(f.detail["scene_id"])] = int(
-                    f.detail["justified_variation_count"]
-                )
+                targets[str(f.detail["scene_id"])] = int(f.detail["justified_variation_count"])
         if not targets:
             return plan, []
 

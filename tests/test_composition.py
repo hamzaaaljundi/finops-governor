@@ -62,9 +62,7 @@ def test_precedence(severities, expected):
 
 
 def test_summary_lists_every_finding():
-    report = ValidityReport(
-        findings=(_f(B, "geometry"), _f(M, "cost_budget"), _f(W, "diversity"))
-    )
+    report = ValidityReport(findings=(_f(B, "geometry"), _f(M, "cost_budget"), _f(W, "diversity")))
     summary = summarize_findings(report)
     assert "geometry" in summary
     assert "cost_budget" in summary
@@ -79,9 +77,7 @@ class _AlwaysBlocks:
     name = "mock_geometry"
 
     def check(self, context: CheckContext) -> list[Finding]:
-        return [
-            Finding(check_name=self.name, severity=Severity.BLOCKING, reason="invalid")
-        ]
+        return [Finding(check_name=self.name, severity=Severity.BLOCKING, reason="invalid")]
 
 
 def test_blocking_axis_overrides_cost_modify(model_and_plan):

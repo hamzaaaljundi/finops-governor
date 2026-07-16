@@ -52,9 +52,9 @@ class GpuRenderCostModel:
 
     def estimate(self, plan: GenerationPlan) -> CostEstimate:
         p = self.profile
-        per_image_s = self._base_render_seconds(
-            plan.render_settings
-        ) * self._modality_factor(plan.modalities)
+        per_image_s = self._base_render_seconds(plan.render_settings) * self._modality_factor(
+            plan.modalities
+        )
 
         per_scene: list[SceneCost] = []
         total_images = 0

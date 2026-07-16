@@ -89,12 +89,8 @@ class DiversityCheck:
         self._capacity_factor = plausible_capacity_factor
 
     def check(self, context: CheckContext) -> list[Finding]:
-        cost_by_scene = {
-            sc.scene_id: sc.subtotal_usd for sc in context.cost_estimate.per_scene
-        }
-        images_by_scene = {
-            sc.scene_id: sc.images for sc in context.cost_estimate.per_scene
-        }
+        cost_by_scene = {sc.scene_id: sc.subtotal_usd for sc in context.cost_estimate.per_scene}
+        images_by_scene = {sc.scene_id: sc.images for sc in context.cost_estimate.per_scene}
 
         findings: list[Finding] = []
         for scene in context.plan.scenes:
@@ -149,16 +145,12 @@ class DiversityCheck:
             )
         return findings
 
-    def _plausibility_findings(
-        self, scene: Scene, capacity: int, variations: int
-    ) -> list[Finding]:
+    def _plausibility_findings(self, scene: Scene, capacity: int, variations: int) -> list[Finding]:
         """Declaration-plausibility warnings: trust made visible, never enforced."""
         if scene.randomization is None:  # pragma: no cover - caller guarantees
             return []
         out: list[Finding] = []
-        implausible = [
-            p for p in scene.randomization.parameters if p.levels > self._max_levels
-        ]
+        implausible = [p for p in scene.randomization.parameters if p.levels > self._max_levels]
         if implausible:
             named = ", ".join(f"'{p.name}' ({p.levels})" for p in implausible)
             out.append(

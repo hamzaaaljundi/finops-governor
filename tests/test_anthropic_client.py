@@ -21,9 +21,7 @@ def test_locked_defaults():
 
 
 def test_model_is_one_argument_to_change():
-    client = AnthropicPlannerModel(
-        model="claude-opus-4-8", api_key="test-key-no-network"
-    )
+    client = AnthropicPlannerModel(model="claude-opus-4-8", api_key="test-key-no-network")
     assert client.model == "claude-opus-4-8"
 
 

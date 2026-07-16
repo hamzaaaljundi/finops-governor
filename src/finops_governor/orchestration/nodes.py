@@ -82,9 +82,7 @@ def adopt_node(state: PipelineState) -> PipelineState:
     if decision is None or decision.verdict is not Verdict.MODIFY:
         raise OrchestrationError("adopt_node requires a MODIFY decision on the state")
     if decision.modified_plan is None or decision.modified_estimate is None:
-        raise OrchestrationError(
-            "MODIFY decision carries no proposal"
-        )  # pragma: no cover
+        raise OrchestrationError("MODIFY decision carries no proposal")  # pragma: no cover
     saved = decision.estimate.total_usd - decision.modified_estimate.total_usd
     return state.with_event(
         "adopt",

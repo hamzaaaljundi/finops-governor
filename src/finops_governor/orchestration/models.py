@@ -89,6 +89,4 @@ class PipelineState(BaseModel):
             budget_usd=budget_usd,
             detail=detail,
         )
-        return self.model_copy(
-            update={"events": (*self.events, event), **state_updates}
-        )
+        return self.model_copy(update={"events": (*self.events, event), **state_updates})

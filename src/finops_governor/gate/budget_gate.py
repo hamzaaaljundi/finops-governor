@@ -32,9 +32,7 @@ class BudgetGate:
     Deprecated since M3: use ``Governor.with_cost_check`` (or ``with_default_checks``).
     """
 
-    def __init__(
-        self, cost_model: CostModel, modifier: PlanModifier | None = None
-    ) -> None:
+    def __init__(self, cost_model: CostModel, modifier: PlanModifier | None = None) -> None:
         self._cost_model = cost_model
         self._modifier = modifier
 

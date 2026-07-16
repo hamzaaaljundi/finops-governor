@@ -76,9 +76,7 @@ def test_value_trim_path_executes_the_trimmed_plan(governor):
 
 
 def test_block_path_is_a_successful_governance_outcome(governor):
-    final = _orch(governor, [_plan_json(budget=0.000001)]).run(
-        "impossible", budget_usd=0.000001
-    )
+    final = _orch(governor, [_plan_json(budget=0.000001)]).run("impossible", budget_usd=0.000001)
     assert final.status is PipelineStatus.BLOCKED
     assert final.error is None  # blocked is not failed
     assert final.events[-1].node == "gate"
@@ -97,9 +95,7 @@ def test_planner_exhaustion_fails_with_trail(governor):
 
 def test_non_converging_governor_hits_the_bound_loudly(governor):
     real_decision = governor.evaluate(
-        GenerationPlan.model_validate(
-            json.loads(_plan_json(variation_count=50_000, levels=[4, 4]))
-        )
+        GenerationPlan.model_validate(json.loads(_plan_json(variation_count=50_000, levels=[4, 4])))
     )
     assert real_decision.verdict is Verdict.MODIFY
 
@@ -126,9 +122,7 @@ def test_non_converging_governor_hits_the_bound_loudly(governor):
 
 def test_run_plan_skips_the_planner(governor):
     plan = GenerationPlan.model_validate(
-        json.loads(
-            (FIXTURES / "diversity" / "redundant" / "production_scale.json").read_text()
-        )
+        json.loads((FIXTURES / "diversity" / "redundant" / "production_scale.json").read_text())
     )
     final = Orchestrator(Planner(FakePlannerModel([])), governor).run_plan(plan)
     assert final.status is PipelineStatus.EXECUTED

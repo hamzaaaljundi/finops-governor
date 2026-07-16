@@ -41,7 +41,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
-    "ruff>=0.6",
+    "ruff==0.15.21",
     "mypy>=1.14",
     "httpx2",
 ]

@@ -75,9 +75,7 @@ class Transform(StrictModel):
 
     @field_validator("scale")
     @classmethod
-    def validate_scale(
-        cls, v: tuple[float, float, float]
-    ) -> tuple[float, float, float]:
+    def validate_scale(cls, v: tuple[float, float, float]) -> tuple[float, float, float]:
         if any(s <= 0 for s in v):
             raise ValueError("All scale components must be strictly greater than 0.")
         return v
@@ -227,9 +225,7 @@ class GenerationPlan(StrictModel):
 
     @field_validator("modalities")
     @classmethod
-    def prevent_duplicate_modalities(
-        cls, v: list[OutputModality]
-    ) -> list[OutputModality]:
+    def prevent_duplicate_modalities(cls, v: list[OutputModality]) -> list[OutputModality]:
         if len(v) != len(set(v)):
             raise ValueError("modalities cannot contain duplicates.")
         return v

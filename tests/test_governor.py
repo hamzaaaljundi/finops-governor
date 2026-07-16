@@ -67,18 +67,14 @@ class _AlwaysBlocks:
     name = "mock_block"
 
     def check(self, context: CheckContext) -> list[Finding]:
-        return [
-            Finding(check_name=self.name, severity=Severity.BLOCKING, reason="mock")
-        ]
+        return [Finding(check_name=self.name, severity=Severity.BLOCKING, reason="mock")]
 
 
 class _AlwaysWarns:
     name = "mock_warn"
 
     def check(self, context: CheckContext) -> list[Finding]:
-        return [
-            Finding(check_name=self.name, severity=Severity.WARNING, reason="heads up")
-        ]
+        return [Finding(check_name=self.name, severity=Severity.WARNING, reason="heads up")]
 
 
 def test_a_second_check_can_block_an_affordable_plan(model):

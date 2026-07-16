@@ -49,9 +49,7 @@ class PlannerError(Exception):
 
 
 class Planner:
-    def __init__(
-        self, model: PlannerModel, max_attempts: int = _DEFAULT_MAX_ATTEMPTS
-    ) -> None:
+    def __init__(self, model: PlannerModel, max_attempts: int = _DEFAULT_MAX_ATTEMPTS) -> None:
         self._model = model
         self._max_attempts = max_attempts
 
@@ -63,9 +61,7 @@ class Planner:
         for _ in range(self._max_attempts):
             raw = self._model.complete(prompt)
             try:
-                candidate = GenerationPlan.model_validate(
-                    json.loads(_strip_fences(raw))
-                )
+                candidate = GenerationPlan.model_validate(json.loads(_strip_fences(raw)))
             except (json.JSONDecodeError, ValidationError) as exc:
                 last_error = str(exc)
                 prompt = self._build_repair_prompt(request, budget_usd, raw, last_error)

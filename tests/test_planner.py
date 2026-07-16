@@ -92,9 +92,7 @@ def test_repairs_schema_violation_and_feeds_error_back():
     fake = FakePlannerModel([bad, _valid_plan_json()])
     plan = Planner(fake).plan("req", budget_usd=50.0)
     assert isinstance(plan, GenerationPlan)
-    assert (
-        "Extra inputs are not permitted" in fake.prompts[1]
-    )  # pydantic error verbatim
+    assert "Extra inputs are not permitted" in fake.prompts[1]  # pydantic error verbatim
 
 
 def test_two_failures_then_success_uses_all_three_attempts():

@@ -29,6 +29,4 @@ def resolve_verdict(report: ValidityReport) -> Verdict:
 
 def summarize_findings(report: ValidityReport) -> str:
     """One audit line listing every finding as '[SEVERITY] check_name: reason'."""
-    return " | ".join(
-        f"[{f.severity.value}] {f.check_name}: {f.reason}" for f in report.findings
-    )
+    return " | ".join(f"[{f.severity.value}] {f.check_name}: {f.reason}" for f in report.findings)
