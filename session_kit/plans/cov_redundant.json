@@ -1,0 +1,66 @@
+{
+  "plan_id": "cov-redundant",
+  "scenes": [
+    {
+      "scene_id": "cov-redundant",
+      "environment": {
+        "asset_id": "floor",
+        "usd_path": "/kit/assets/floor.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "arm",
+          "usd_path": "/kit/assets/arm.usda"
+        },
+        {
+          "asset_id": "box",
+          "usd_path": "/kit/assets/box.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "cam",
+          "transform": {
+            "translation": [
+              0,
+              2.0,
+              6.0
+            ],
+            "rotation": [
+              -15.0,
+              0.0,
+              0.0
+            ]
+          }
+        }
+      ],
+      "variation_count": 600,
+      "randomization": {
+        "parameters": [
+          {
+            "name": "azimuth",
+            "levels": 4
+          },
+          {
+            "name": "lighting",
+            "levels": 4,
+            "min_value": 600,
+            "max_value": 2400
+          }
+        ]
+      }
+    }
+  ],
+  "modalities": [
+    "RGB"
+  ],
+  "render_settings": {
+    "width": 1280,
+    "height": 720,
+    "samples_per_pixel": 64,
+    "renderer": "PATH_TRACED"
+  },
+  "budget": {
+    "max_usd": 40.0
+  }
+}

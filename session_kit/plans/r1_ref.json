@@ -1,0 +1,66 @@
+{
+  "plan_id": "r1-ref",
+  "scenes": [
+    {
+      "scene_id": "r1-ref",
+      "environment": {
+        "asset_id": "floor",
+        "usd_path": "/kit/assets/floor.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "arm",
+          "usd_path": "/kit/assets/arm.usda"
+        },
+        {
+          "asset_id": "box",
+          "usd_path": "/kit/assets/box.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "cam",
+          "transform": {
+            "translation": [
+              0,
+              2.0,
+              6.0
+            ],
+            "rotation": [
+              -15.0,
+              0.0,
+              0.0
+            ]
+          }
+        }
+      ],
+      "variation_count": 120,
+      "randomization": {
+        "parameters": [
+          {
+            "name": "azimuth",
+            "levels": 12
+          },
+          {
+            "name": "lighting",
+            "levels": 5,
+            "min_value": 500,
+            "max_value": 2500
+          }
+        ]
+      }
+    }
+  ],
+  "modalities": [
+    "RGB"
+  ],
+  "render_settings": {
+    "width": 1920,
+    "height": 1080,
+    "samples_per_pixel": 128,
+    "renderer": "PATH_TRACED"
+  },
+  "budget": {
+    "max_usd": 40.0
+  }
+}

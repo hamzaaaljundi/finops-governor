@@ -1,0 +1,13 @@
+#usda 1.0
+(
+    defaultPrim = "floor"
+    upAxis = "Y"
+    metersPerUnit = 1
+)
+def Cube "floor"
+{
+    double size = 1.0
+    double3 xformOp:translate = (0, -0.05, 0)
+    double3 xformOp:scale = (10, 0.1, 10)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+}
