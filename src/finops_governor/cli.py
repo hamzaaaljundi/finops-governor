@@ -40,7 +40,9 @@ _EXIT_STATUS = {
 }
 
 
-def main(argv: list[str] | None = None, planner_model: PlannerModel | None = None) -> int:
+def main(
+    argv: list[str] | None = None, planner_model: PlannerModel | None = None
+) -> int:
     parser = argparse.ArgumentParser(
         prog="finops-governor",
         description=(
@@ -51,7 +53,10 @@ def main(argv: list[str] | None = None, planner_model: PlannerModel | None = Non
     )
     parser.add_argument(
         "target",
-        help=("path to a GenerationPlan JSON file; or, with --budget, a natural-language request"),
+        help=(
+            "path to a GenerationPlan JSON file; or, with --budget, a natural-language "
+            "request"
+        ),
     )
     parser.add_argument(
         "--budget",
@@ -70,6 +75,15 @@ def main(argv: list[str] | None = None, planner_model: PlannerModel | None = Non
         default=None,
         metavar="PATH",
         help="plan mode: write the full audit trail (terminal pipeline state) to PATH",
+    )
+    parser.add_argument(
+        "--emit-replicator",
+        default=None,
+        metavar="PATH",
+        help=(
+            "evaluate mode: also write a runnable Omniverse Replicator script for "
+            "this plan to PATH (single-scene plans; see finops_governor.adapter)"
+        ),
     )
     parser.add_argument(
         "--advise",
@@ -105,6 +119,13 @@ def main(argv: list[str] | None = None, planner_model: PlannerModel | None = Non
     )
 
     if args.budget is not None:
+        if args.emit_replicator is not None:
+            print(
+                "error: --emit-replicator requires evaluate mode "
+                "(save the final plan with --save, then adapt it)",
+                file=sys.stderr,
+            )
+            return 3
         return _run_pipeline(args, profile, governor, planner_model)
 
     if args.audit is not None:
@@ -118,6 +139,16 @@ def main(argv: list[str] | None = None, planner_model: PlannerModel | None = Non
     _print_decision(plan, profile, decision)
     if args.advise:
         _print_advice(plan)
+    if args.emit_replicator is not None:
+        from finops_governor.adapter import AdapterError, generate_replicator_script
+
+        try:
+            script = generate_replicator_script(plan)
+        except AdapterError as exc:
+            print(f"error: cannot adapt plan: {exc}", file=sys.stderr)
+            return 3
+        Path(args.emit_replicator).write_text(script)
+        print(f"replicator: {args.emit_replicator}")
     return _EXIT[decision.verdict]
 
 
@@ -144,7 +175,8 @@ def _run_pipeline(
         final = orchestrator.run(args.target, budget_usd=args.budget)
     except Exception as exc:  # SDK errors: missing ANTHROPIC_API_KEY, network, auth
         print(
-            f"error: model call failed ({type(exc).__name__}: {exc}). Is ANTHROPIC_API_KEY set?",
+            f"error: model call failed ({type(exc).__name__}: {exc}). "
+            "Is ANTHROPIC_API_KEY set?",
             file=sys.stderr,
         )
         return 3
@@ -206,7 +238,9 @@ def _load_plan_file(path_str: str) -> GenerationPlan | None:
         return None
 
 
-def _print_decision(plan: GenerationPlan, profile: HardwareProfile, decision: GateDecision) -> None:
+def _print_decision(
+    plan: GenerationPlan, profile: HardwareProfile, decision: GateDecision
+) -> None:
     print(f"plan:      {plan.plan_id}")
     print(f"profile:   {profile.name}")
     print(
@@ -229,7 +263,11 @@ def _print_advice(plan: GenerationPlan) -> None:
     advice = advise(plan)
     print("advice:    cheapest hardware for this job:")
     for row in advice.ranking:
-        marker = "  <- recommended" if row.profile_id == advice.recommended_profile_id else ""
+        marker = (
+            "  <- recommended"
+            if row.profile_id == advice.recommended_profile_id
+            else ""
+        )
         print(
             f"             {row.profile_id:6s} ${row.total_usd:,.2f}  "
             f"({row.gpu_hours:.2f} GPU-hours @ ${row.price_per_hour_usd}/h){marker}"
