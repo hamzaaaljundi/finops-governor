@@ -48,9 +48,7 @@ def _plan(
 
 
 def test_emitted_script_is_valid_python():
-    script = generate_replicator_script(
-        _plan(parameters=[{"name": "azimuth", "levels": 12}])
-    )
+    script = generate_replicator_script(_plan(parameters=[{"name": "azimuth", "levels": 12}]))
     compile(script, "generated_replicator.py", "exec")  # raises on invalid syntax
 
 
@@ -79,9 +77,7 @@ def test_modalities_map_to_writer_flags_and_pose_is_warned():
 
 
 def test_declared_levels_are_honored_exactly():
-    script = generate_replicator_script(
-        _plan(parameters=[{"name": "azimuth", "levels": 12}])
-    )
+    script = generate_replicator_script(_plan(parameters=[{"name": "azimuth", "levels": 12}]))
     choice_line = next(line for line in script.splitlines() if "# azimuth" in line)
     assert choice_line.count(",") >= 11  # 12 values in the choice list
     assert "0.0" in choice_line and "360.0" in choice_line
@@ -89,20 +85,14 @@ def test_declared_levels_are_honored_exactly():
 
 def test_declared_range_is_honored():
     script = generate_replicator_script(
-        _plan(
-            parameters=[
-                {"name": "lighting", "levels": 5, "min_value": 500, "max_value": 2500}
-            ]
-        )
+        _plan(parameters=[{"name": "lighting", "levels": 5, "min_value": 500, "max_value": 2500}])
     )
     light_line = next(line for line in script.splitlines() if "# lighting" in line)
     assert "500.0" in light_line and "2500.0" in light_line
 
 
 def test_unknown_parameter_is_skipped_with_a_trust_warning():
-    script = generate_replicator_script(
-        _plan(parameters=[{"name": "quantum_flux", "levels": 99}])
-    )
+    script = generate_replicator_script(_plan(parameters=[{"name": "quantum_flux", "levels": 99}]))
     assert "WARNING: parameter 'quantum_flux'" in script
     assert "trusted this declaration" in script
 

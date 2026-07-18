@@ -40,9 +40,7 @@ _EXIT_STATUS = {
 }
 
 
-def main(
-    argv: list[str] | None = None, planner_model: PlannerModel | None = None
-) -> int:
+def main(argv: list[str] | None = None, planner_model: PlannerModel | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="finops-governor",
         description=(
@@ -53,10 +51,7 @@ def main(
     )
     parser.add_argument(
         "target",
-        help=(
-            "path to a GenerationPlan JSON file; or, with --budget, a natural-language "
-            "request"
-        ),
+        help=("path to a GenerationPlan JSON file; or, with --budget, a natural-language request"),
     )
     parser.add_argument(
         "--budget",
@@ -175,8 +170,7 @@ def _run_pipeline(
         final = orchestrator.run(args.target, budget_usd=args.budget)
     except Exception as exc:  # SDK errors: missing ANTHROPIC_API_KEY, network, auth
         print(
-            f"error: model call failed ({type(exc).__name__}: {exc}). "
-            "Is ANTHROPIC_API_KEY set?",
+            f"error: model call failed ({type(exc).__name__}: {exc}). Is ANTHROPIC_API_KEY set?",
             file=sys.stderr,
         )
         return 3
@@ -238,9 +232,7 @@ def _load_plan_file(path_str: str) -> GenerationPlan | None:
         return None
 
 
-def _print_decision(
-    plan: GenerationPlan, profile: HardwareProfile, decision: GateDecision
-) -> None:
+def _print_decision(plan: GenerationPlan, profile: HardwareProfile, decision: GateDecision) -> None:
     print(f"plan:      {plan.plan_id}")
     print(f"profile:   {profile.name}")
     print(
@@ -263,11 +255,7 @@ def _print_advice(plan: GenerationPlan) -> None:
     advice = advise(plan)
     print("advice:    cheapest hardware for this job:")
     for row in advice.ranking:
-        marker = (
-            "  <- recommended"
-            if row.profile_id == advice.recommended_profile_id
-            else ""
-        )
+        marker = "  <- recommended" if row.profile_id == advice.recommended_profile_id else ""
         print(
             f"             {row.profile_id:6s} ${row.total_usd:,.2f}  "
             f"({row.gpu_hours:.2f} GPU-hours @ ${row.price_per_hour_usd}/h){marker}"

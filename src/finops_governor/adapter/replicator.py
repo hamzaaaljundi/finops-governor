@@ -52,9 +52,7 @@ class AdapterError(Exception):
     """The plan cannot be adapted; the reason names the v1 limit that was hit."""
 
 
-def generate_replicator_script(
-    plan: GenerationPlan, output_dir: str = "_output"
-) -> str:
+def generate_replicator_script(plan: GenerationPlan, output_dir: str = "_output") -> str:
     """Emit a standalone Replicator script for a single-scene GenerationPlan."""
     if len(plan.scenes) != 1:
         raise AdapterError(
@@ -79,18 +77,14 @@ def generate_replicator_script(
     add("")
     # Render mode + quality from the plan's render settings
     if rs.renderer is RendererType.PATH_TRACED:
-        add(
-            f"rep.settings.set_render_pathtraced(samples_per_pixel={rs.samples_per_pixel})"
-        )
+        add(f"rep.settings.set_render_pathtraced(samples_per_pixel={rs.samples_per_pixel})")
     else:
         add("rep.settings.set_render_rtx_realtime()")
     add("")
     add("with rep.new_layer():")
     add(f"    environment = rep.create.from_usd({scene.environment.usd_path!r})")
     for i, asset in enumerate(scene.assets):
-        add(
-            f"    asset_{i} = rep.create.from_usd({asset.usd_path!r})  # {asset.asset_id}"
-        )
+        add(f"    asset_{i} = rep.create.from_usd({asset.usd_path!r})  # {asset.asset_id}")
     asset_group = ", ".join(f"asset_{i}" for i in range(len(scene.assets)))
     add(f"    assets = rep.create.group([{asset_group}])")
     add("")
@@ -114,9 +108,7 @@ def generate_replicator_script(
     # Writer: modalities -> BasicWriter annotators
     writer_flags, skipped = _writer_flags(plan)
     for modality in skipped:
-        add(
-            f"    # WARNING: modality {modality.value} has no BasicWriter annotator; skipped (v1)."
-        )
+        add(f"    # WARNING: modality {modality.value} has no BasicWriter annotator; skipped (v1).")
     add('    writer = rep.WriterRegistry.get("BasicWriter")')
     flag_args = ", ".join(f"{flag}=True" for flag in writer_flags)
     add(f"    writer.initialize(output_dir={output_dir!r}, {flag_args})")
