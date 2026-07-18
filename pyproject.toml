@@ -50,9 +50,9 @@ dev = [
 finops-governor = "finops_governor.cli:main"
 
 [project.urls]
-Repository = "https://github.com/hamzaaljundi/finops-governor"
-Documentation = "https://github.com/hamzaaljundi/finops-governor/tree/main/docs"
-Changelog = "https://github.com/hamzaaljundi/finops-governor/releases"
+Repository = "https://github.com/hamzaaaljundi/finops-governor"
+Documentation = "https://github.com/hamzaaaljundi/finops-governor/tree/main/docs"
+Changelog = "https://github.com/hamzaaaljundi/finops-governor/releases"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/finops_governor"]
