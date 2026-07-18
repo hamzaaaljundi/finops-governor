@@ -1,6 +1,6 @@
-# FinOps Governor for Synthetic Data Pipelines
+# FinOps Governor for Physical-AI Synthetic Data Pipelines
 
-**A pre-flight gate for training-value-per-GPU-dollar.** Before a single frame renders,
+**A pre-flight gate for training-value-per-GPU-dollar in Physical AI.** Before a single frame renders,
 it refuses synthetic-data jobs that are **over budget**, **geometrically invalid**, or
 **predictably low training-value** - prices the waste in dollars, and hands back the
 plan without it.
