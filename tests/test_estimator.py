@@ -44,20 +44,15 @@ def _scene(scene_id: str, variations: int, cameras: int) -> Scene:
         environment=AssetReference(asset_id=f"{scene_id}-env", usd_path="e.usda"),
         assets=[AssetReference(asset_id=f"{scene_id}-a", usd_path="a.usda")],
         cameras=[
-            Camera(camera_id=f"{scene_id}-c{i}", transform=Transform())
-            for i in range(cameras)
+            Camera(camera_id=f"{scene_id}-c{i}", transform=Transform()) for i in range(cameras)
         ],
         variation_count=variations,
     )
 
 
-def _plan(
-    scenes, modalities, width=1920, height=1080, spp=128, renderer=None
-) -> GenerationPlan:
+def _plan(scenes, modalities, width=1920, height=1080, spp=128, renderer=None) -> GenerationPlan:
     rs = (
-        RenderSettings(
-            width=width, height=height, samples_per_pixel=spp, renderer=renderer
-        )
+        RenderSettings(width=width, height=height, samples_per_pixel=spp, renderer=renderer)
         if renderer
         else RenderSettings(width=width, height=height, samples_per_pixel=spp)
     )
@@ -124,9 +119,7 @@ def test_more_modalities_costs_more():
     scenes = [_scene("s", 100, 1)]
     rgb = _model().estimate(_plan(scenes, [OutputModality.RGB])).total_usd
     rgb_plus = (
-        _model()
-        .estimate(_plan(scenes, [OutputModality.RGB, OutputModality.DEPTH]))
-        .total_usd
+        _model().estimate(_plan(scenes, [OutputModality.RGB, OutputModality.DEPTH])).total_usd
     )
     assert rgb_plus > rgb
 
@@ -136,9 +129,7 @@ def test_rasterized_cheaper_than_path_traced():
     pt = _model().estimate(_plan(scenes, [OutputModality.RGB], spp=128)).total_usd
     rz = (
         _model()
-        .estimate(
-            _plan(scenes, [OutputModality.RGB], spp=1, renderer=RendererType.RASTERIZED)
-        )
+        .estimate(_plan(scenes, [OutputModality.RGB], spp=1, renderer=RendererType.RASTERIZED))
         .total_usd
     )
     assert rz < pt
