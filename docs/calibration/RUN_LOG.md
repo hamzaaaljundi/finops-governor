@@ -64,7 +64,24 @@ verify by full extraction and byte-comparison before terminating (near-identical
 simple-scene frames and near-uniform depth arrays compress extremely well; every file
 byte-identical). Instance terminated; EBS confirmed deleted.
 
-## Results (details in timings/)
+**Phase 8 - the postmortem that renamed the session (added after analysis).**
+The 9.5 coverage analysis - the only step in the pipeline that reads image CONTENT
+rather than file existence or timestamps - found all pairwise distances exactly zero.
+Human inspection confirmed: **every frame of the session is black.** Root cause, found
+in the adapter source: lights were only ever emitted inside the frame trigger, where
+`rep.create` does not execute, and plans without lighting variation got no light at
+all. The GPU spent the session faithfully path-tracing an unlit stage. Consequences
+drawn: (1) adapter fixed - a guaranteed setup light plus intensity-modification in
+the trigger, with structural tests forbidding creates inside trigger bodies;
+(2) the standalone bootstrap folded natively into the adapter; (3) a mandatory
+look-at-the-pixels checkpoint added to the RUNBOOK; (4) the timing constants below
+stand as strictly-better-than-estimates but are flagged pending re-measurement on a
+lit scene (render day 2) - path-tracing an unlit scene under-counts light-sampling
+work, and the fail-safe rule forbids shipping a suspected under-estimate as
+"measured". The session's most valuable output turned out to be the postmortem: the
+validation experiment caught the pipeline's blind spot exactly as designed.
+
+## Results (details in timings/; PENDING RE-MEASUREMENT per Phase 8)
 
 | Run | Setting | Mean s/frame | CV | Verdict |
 |---|---|---|---|---|

@@ -2,9 +2,13 @@
 
 plan:  cov-trimmed
 scene: cov-trimmed (26 variations)
-Run inside Isaac Sim (headless):
-  ./python.sh <this file>   # or via isaac-sim.headless with script arg
+Standalone headless execution (M9.2-validated form):
+  docker run ... --entrypoint /isaac-sim/python.sh <image> <this file>
 """
+
+from isaacsim import SimulationApp
+
+simulation_app = SimulationApp({"headless": True})
 
 import omni.replicator.core as rep
 
@@ -19,10 +23,15 @@ with rep.new_layer():
     camera_0 = rep.create.camera(position=(0.0, 2.0, 6.0), rotation=(-15.0, 0.0, 0.0))  # cam
     render_products = [rep.create.render_product(camera_0, (1280, 720))]
 
+    scene_light = rep.create.light(light_type='Sphere', position=(0, 4, 0), intensity=1500.0)
+
     with rep.trigger.on_frame(num_frames=26):
         rep.modify.pose(input_prims=assets, rotation=rep.distribution.choice([(0, y, 0) for y in [0.0, 120.0, 240.0, 360.0]]))  # azimuth
-        rep.create.light(light_type='Sphere', position=(0, 4, 0), intensity=rep.distribution.choice([600.0, 1200.0, 1800.0, 2400.0]))  # lighting
+        rep.modify.attribute(scene_light, 'intensity', rep.distribution.choice([600.0, 1200.0, 1800.0, 2400.0]))  # lighting
 
     writer = rep.WriterRegistry.get("BasicWriter")
     writer.initialize(output_dir='/kit/out/cov_trimmed', rgb=True)
     writer.attach(render_products)
+
+rep.orchestrator.run_until_complete()
+simulation_app.close()

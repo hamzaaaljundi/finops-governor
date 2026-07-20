@@ -2,9 +2,13 @@
 
 plan:  r1-ref
 scene: r1-ref (120 variations)
-Run inside Isaac Sim (headless):
-  ./python.sh <this file>   # or via isaac-sim.headless with script arg
+Standalone headless execution (M9.2-validated form):
+  docker run ... --entrypoint /isaac-sim/python.sh <image> <this file>
 """
+
+from isaacsim import SimulationApp
+
+simulation_app = SimulationApp({"headless": True})
 
 import omni.replicator.core as rep
 
@@ -19,10 +23,15 @@ with rep.new_layer():
     camera_0 = rep.create.camera(position=(0.0, 2.0, 6.0), rotation=(-15.0, 0.0, 0.0))  # cam
     render_products = [rep.create.render_product(camera_0, (1920, 1080))]
 
+    scene_light = rep.create.light(light_type='Sphere', position=(0, 4, 0), intensity=1500.0)
+
     with rep.trigger.on_frame(num_frames=120):
         rep.modify.pose(input_prims=assets, rotation=rep.distribution.choice([(0, y, 0) for y in [0.0, 32.7273, 65.4545, 98.1818, 130.9091, 163.6364, 196.3636, 229.0909, 261.8182, 294.5455, 327.2727, 360.0]]))  # azimuth
-        rep.create.light(light_type='Sphere', position=(0, 4, 0), intensity=rep.distribution.choice([500.0, 1000.0, 1500.0, 2000.0, 2500.0]))  # lighting
+        rep.modify.attribute(scene_light, 'intensity', rep.distribution.choice([500.0, 1000.0, 1500.0, 2000.0, 2500.0]))  # lighting
 
     writer = rep.WriterRegistry.get("BasicWriter")
     writer.initialize(output_dir='/kit/out/r1_ref', rgb=True)
     writer.attach(render_products)
+
+rep.orchestrator.run_until_complete()
+simulation_app.close()

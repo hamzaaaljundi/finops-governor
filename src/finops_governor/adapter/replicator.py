@@ -69,9 +69,13 @@ def generate_replicator_script(plan: GenerationPlan, output_dir: str = "_output"
     add("")
     add(f"plan:  {plan.plan_id}")
     add(f"scene: {scene.scene_id} ({scene.variation_count} variations)")
-    add("Run inside Isaac Sim (headless):")
-    add("  ./python.sh <this file>   # or via isaac-sim.headless with script arg")
+    add("Standalone headless execution (M9.2-validated form):")
+    add("  docker run ... --entrypoint /isaac-sim/python.sh <image> <this file>")
     add('"""')
+    add("")
+    add("from isaacsim import SimulationApp")
+    add("")
+    add('simulation_app = SimulationApp({"headless": True})')
     add("")
     add("import omni.replicator.core as rep")
     add("")
@@ -100,6 +104,14 @@ def generate_replicator_script(plan: GenerationPlan, output_dir: str = "_output"
     )
     add(f"    render_products = [{products}]")
     add("")
+    # Guaranteed illumination (M9.2 postmortem): every scene gets a default light at
+    # setup. The calibration session rendered black frames because lights were only
+    # ever emitted inside the frame trigger, where rep.create does not execute.
+    add(
+        "    scene_light = rep.create.light("
+        "light_type='Sphere', position=(0, 4, 0), intensity=1500.0)"
+    )
+    add("")
     # Randomization: the declared block through the v1 registry
     randomizer_body = _randomizer_lines(scene)
     add(f"    with rep.trigger.on_frame(num_frames={scene.variation_count}):")
@@ -113,6 +125,9 @@ def generate_replicator_script(plan: GenerationPlan, output_dir: str = "_output"
     flag_args = ", ".join(f"{flag}=True" for flag in writer_flags)
     add(f"    writer.initialize(output_dir={output_dir!r}, {flag_args})")
     add("    writer.attach(render_products)")
+    add("")
+    add("rep.orchestrator.run_until_complete()")
+    add("simulation_app.close()")
     add("")
     return "\n".join(lines)
 
@@ -170,9 +185,11 @@ def _randomizer_lines(scene: Scene) -> list[str]:
                 f"[(x, 0, x) for x in {_choices(param, -2.0, 2.0)}]))  # {param.name}"
             )
         elif kind == "light":
+            # M9.2 postmortem: rep.create inside a trigger does not execute; the
+            # light exists at setup (scene_light) and its intensity is MODIFIED here.
             out.append(
-                f"rep.create.light(light_type='Sphere', position=(0, 4, 0), "
-                f"intensity=rep.distribution.choice({_choices(param, 300.0, 3000.0)}))"
+                f"rep.modify.attribute(scene_light, 'intensity', "
+                f"rep.distribution.choice({_choices(param, 300.0, 3000.0)}))"
                 f"  # {param.name}"
             )
         elif kind == "color":

@@ -132,3 +132,37 @@ def test_cli_emit_requires_evaluate_mode(capsys):
     err = capsys.readouterr().err
     assert code == 3
     assert "requires evaluate mode" in err
+
+
+def test_every_script_has_setup_light_before_trigger():
+    # M9.2 postmortem: the calibration session rendered black frames because the
+    # only light was emitted inside the frame trigger, where rep.create does not
+    # execute - and plans without lighting variation got no light at all.
+    script = generate_replicator_script(_plan(parameters=[{"name": "lighting", "levels": 4}]))
+    light_at = script.index("scene_light = rep.create.light")
+    trigger_at = script.index("with rep.trigger.on_frame")
+    assert light_at < trigger_at
+
+
+def test_no_creates_inside_trigger_body():
+    script = generate_replicator_script(
+        _plan(
+            parameters=[
+                {"name": "lighting", "levels": 4},
+                {"name": "azimuth", "levels": 4},
+            ]
+        )
+    )
+    trigger_at = script.index("with rep.trigger.on_frame")
+    writer_at = script.index("writer = rep.WriterRegistry")
+    trigger_body = script[trigger_at:writer_at]
+    assert "rep.create." not in trigger_body
+
+
+def test_script_is_standalone_executable():
+    # The M9.2 live patch, versioned: bootstrap before omni imports, completion
+    # footer at the end.
+    script = generate_replicator_script(_plan())
+    assert script.index("SimulationApp({") < script.index("import omni.replicator")
+    assert "rep.orchestrator.run_until_complete()" in script
+    assert script.rstrip().endswith("simulation_app.close()")
