@@ -2,11 +2,11 @@
   "request": "50,000 variations of a robotic arm on an assembly floor, RGB and depth",
   "budget_usd": 1000.0,
   "plan": {
-    "plan_id": "robotic-arm-assembly-floor-001",
+    "plan_id": "robotic-arm-assembly-floor-50k",
     "request_text": "50,000 variations of a robotic arm on an assembly floor, RGB and depth",
     "scenes": [
       {
-        "scene_id": "assembly-floor-robotic-arm",
+        "scene_id": "assembly_floor_robotic_arm",
         "environment": {
           "asset_id": "assembly_floor_env",
           "usd_path": "/environments/assembly_floor/assembly_floor.usd",
@@ -53,11 +53,11 @@
             "category": "robotic_arm"
           },
           {
-            "asset_id": "assembly_workbench",
-            "usd_path": "/assets/furniture/workbench/workbench.usd",
+            "asset_id": "assembly_conveyor",
+            "usd_path": "/assets/props/conveyor_belt/conveyor_belt.usd",
             "transform": {
               "translation": [
-                0.0,
+                1.5,
                 0.0,
                 0.0
               ],
@@ -72,16 +72,16 @@
                 1.0
               ]
             },
-            "category": "furniture"
+            "category": "prop"
           },
           {
-            "asset_id": "assembly_parts_tray",
-            "usd_path": "/assets/props/parts_tray/parts_tray.usd",
+            "asset_id": "workpiece",
+            "usd_path": "/assets/props/workpiece/workpiece.usd",
             "transform": {
               "translation": [
-                0.5,
+                1.5,
                 0.0,
-                0.8
+                0.85
               ],
               "rotation": [
                 0.0,
@@ -107,7 +107,7 @@
                 1.5
               ],
               "rotation": [
-                -10.0,
+                -15.0,
                 0.0,
                 0.0
               ],
@@ -128,7 +128,7 @@
                 1.5
               ],
               "rotation": [
-                -10.0,
+                -15.0,
                 90.0,
                 0.0
               ],
@@ -167,7 +167,7 @@
           "parameters": [
             {
               "name": "arm_joint_configuration",
-              "levels": 500,
+              "levels": 5000,
               "min_value": -180.0,
               "max_value": 180.0
             },
@@ -190,25 +190,25 @@
               "max_value": null
             },
             {
-              "name": "floor_material_texture",
+              "name": "workpiece_type",
               "levels": 8,
+              "min_value": null,
+              "max_value": null
+            },
+            {
+              "name": "floor_texture",
+              "levels": 6,
               "min_value": null,
               "max_value": null
             },
             {
               "name": "camera_position_jitter",
               "levels": 25,
-              "min_value": -0.2,
-              "max_value": 0.2
+              "min_value": -0.1,
+              "max_value": 0.1
             },
             {
-              "name": "background_clutter_props",
-              "levels": 15,
-              "min_value": null,
-              "max_value": null
-            },
-            {
-              "name": "ambient_occlusion_strength",
+              "name": "background_clutter_density",
               "levels": 5,
               "min_value": 0.0,
               "max_value": 1.0
@@ -235,20 +235,20 @@
   },
   "decision": {
     "verdict": "APPROVE",
-    "plan_id": "robotic-arm-assembly-floor-001",
-    "reason": "Estimated $14.79 is within the $1000.00 budget.",
+    "plan_id": "robotic-arm-assembly-floor-50k",
+    "reason": "[WARNING] diversity: scene 'assembly_floor_robotic_arm': declaration plausibility - parameter(s) 'arm_joint_configuration' (5000) claim more than 64 meaningfully distinct levels; the coverage judgment trusts these declarations. | [WARNING] diversity: scene 'assembly_floor_robotic_arm': declaration plausibility - declared capacity (~96000000000 configurations) exceeds the 50000 variations by over 100x; most declared configurations will never be sampled, and the coverage judgment trusts the declaration.",
     "estimate": {
-      "total_usd": 14.792251944444443,
-      "total_gpu_hours": 14.704027777777776,
+      "total_usd": 18.611735870370367,
+      "total_gpu_hours": 18.500731481481477,
       "total_images": 150000,
       "hardware_profile": "NVIDIA A10G (AWS g5.xlarge)",
       "per_scene": [
         {
-          "scene_id": "assembly-floor-robotic-arm",
+          "scene_id": "assembly_floor_robotic_arm",
           "images": 150000,
-          "fixed_seconds": 30.0,
-          "render_seconds": 46000.0,
-          "subtotal_usd": 14.792251944444443
+          "fixed_seconds": 32.0,
+          "render_seconds": 57883.33333333333,
+          "subtotal_usd": 18.611735870370367
         }
       ]
     },
@@ -264,8 +264,8 @@
     {
       "sequence": 0,
       "node": "plan",
-      "timestamp": "2026-07-15T18:06:20.591851Z",
-      "summary": "planned 'robotic-arm-assembly-floor-001' (assembly-floor-robotic-arm x50000)",
+      "timestamp": "2026-07-20T19:59:47.394679Z",
+      "summary": "planned 'robotic-arm-assembly-floor-50k' (assembly_floor_robotic_arm x50000)",
       "verdict": null,
       "driving_axes": null,
       "estimated_usd": null,
@@ -275,27 +275,27 @@
     {
       "sequence": 1,
       "node": "gate",
-      "timestamp": "2026-07-15T18:06:20.592097Z",
-      "summary": "verdict APPROVE on 'robotic-arm-assembly-floor-001': Estimated $14.79 is within the $1000.00 budget.",
+      "timestamp": "2026-07-20T19:59:47.394835Z",
+      "summary": "verdict APPROVE on 'robotic-arm-assembly-floor-50k': [WARNING] diversity: scene 'assembly_floor_robotic_arm': declaration plausibility - parameter(s) 'arm_joint_configuration' (5000) claim more than 64 meaningfully distinct levels; the coverage judgment trusts these declarations. | [WARNING] diversity: scene 'assembly_floor_robotic_arm': declaration plausibility - declared capacity (~96000000000 configurations) exceeds the 50000 variations by over 100x; most declared configurations will never be sampled, and the coverage judgment trusts the declaration.",
       "verdict": "APPROVE",
       "driving_axes": null,
-      "estimated_usd": 14.792251944444443,
+      "estimated_usd": 18.611735870370367,
       "budget_usd": 1000.0,
       "detail": null
     },
     {
       "sequence": 2,
       "node": "execute",
-      "timestamp": "2026-07-15T18:06:20.592128Z",
-      "summary": "execution stub: would render 150,000 images (14.70 GPU-hours, $14.79) on NVIDIA A10G (AWS g5.xlarge)",
+      "timestamp": "2026-07-20T19:59:47.394855Z",
+      "summary": "execution stub: would render 150,000 images (18.50 GPU-hours, $18.61) on NVIDIA A10G (AWS g5.xlarge)",
       "verdict": null,
       "driving_axes": null,
-      "estimated_usd": 14.792251944444443,
+      "estimated_usd": 18.611735870370367,
       "budget_usd": 1000.0,
       "detail": {
-        "plan_id": "robotic-arm-assembly-floor-001",
+        "plan_id": "robotic-arm-assembly-floor-50k",
         "images": 150000,
-        "gpu_hours": 14.704027777777776
+        "gpu_hours": 18.500731481481477
       }
     }
   ]

@@ -59,8 +59,8 @@ downstream model training; validating rendered output images.
   no best-case cliff, headline dollars preserved to the cent) with an
   effective-cost-per-distinct metric ($0.004/image nominal vs $23.33/distinct on the
   production example); value-aware modification (ADR 0007) - diversity findings are
-  MODIFIABLE, the proposal is built value-pass-then-budget-pass, and the $373 redundant
-  job comes back as a $0.20 same-coverage proposal; a named adversarial prompt-injection
+  MODIFIABLE, the proposal is built value-pass-then-budget-pass, and the redundant production
+  job (now $391 under measured constants) comes back as a $0.21 same-coverage proposal; a named adversarial prompt-injection
   suite attacking the trust boundary; mypy (strict settings) added to CI.
 
 - **M7 - Orchestration + audit trail** (`v0.7-orchestration`). The pipeline as pure

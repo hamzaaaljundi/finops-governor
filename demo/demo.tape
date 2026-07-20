@@ -5,27 +5,15 @@
 
 Output demo/demo.gif
 
-Set Shell "bash"
-Set FontSize 20
-Set Width 1400
-Set Height 720
-Set Padding 20
-Set Margin 20
-Set MarginFill "#1a1b26"
-Set BorderRadius 12
-Set Theme "Catppuccin Mocha"
+Set FontSize 15
+Set Width 1200
+Set Height 660
+Set Padding 16
+Set Theme "Dracula"
 Set TypingSpeed 35ms
-Set Framerate 24
-Set CursorBlink false
-
-Hide
-Type "PS1='$ ' && clear"
-Enter
-Show
-
 
 # --- Scene 1: the headline - waste priced AND removed -------------------
-Type "# A $373 job that is ~100% redundant: flagged in dollars, trimmed to the same coverage"
+Type "# A $391 job that is ~100% redundant: flagged in dollars, trimmed to the same coverage"
 Enter
 Sleep 1.5s
 Type "finops-governor fixtures/diversity/redundant/production_scale.json"

@@ -1,6 +1,6 @@
-# FinOps Governor for Physical-AI Synthetic Data Pipelines
+# FinOps Governor for Synthetic Data Pipelines
 
-**A pre-flight gate for training-value-per-GPU-dollar in Physical AI.** Before a single frame renders,
+**A pre-flight gate for training-value-per-GPU-dollar.** Before a single frame renders,
 it refuses synthetic-data jobs that are **over budget**, **geometrically invalid**, or
 **predictably low training-value** - prices the waste in dollars, and hands back the
 plan without it.
@@ -8,10 +8,10 @@ plan without it.
 ![demo](demo/demo.gif)
 
 > _"50000 variations over ~16 declared configurations - expected ~100% redundant; est.
-> **$373.18** of spend adds little training value (effective **$23.33/distinct
-> configuration** vs $0.0037/image nominal); recoverable by trimming to 26 variations."_
+> **$391.19** of spend adds little training value (effective **$24.46/distinct
+> configuration** vs $0.0039/image nominal); recoverable by trimming to 26 variations."_
 >
-> _"proposal: fits budget at **$0.20**"_
+> _"proposal: fits budget at **$0.21**"_
 
 The three checks are one idea: each is a reason **not to spend GPU-hours, catchable
 before you spend**. An LLM proposes plans; a deterministic gate decides - and when a
@@ -26,7 +26,7 @@ plan is recoverable, the gate builds the cheaper, coverage-preserving version it
 ## Install
 
 ```bash
-git clone https://github.com/hamzaaaljundi/finops-governor && cd finops-governor
+git clone https://github.com/hamzaaljundi/finops-governor && cd finops-governor
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e .
 ```
@@ -42,7 +42,7 @@ pip install --index-url https://test.pypi.org/simple/ \
 ## Try it
 
 ```bash
-# the headline: a $373 job that is ~100% redundant -> priced AND trimmed (exit 1)
+# the headline: a $391 job that is ~100% redundant -> priced AND trimmed (exit 1)
 finops-governor fixtures/diversity/redundant/production_scale.json
 
 # affordable and diverse, but the arm is authored through the floor -> BLOCKED, $0 spent
@@ -130,15 +130,17 @@ stub; audit trail; CLI + HTTP service.
 
 **Out of scope:** running large-scale generation (execution is stubbed - the
 *governance* is the product); GPU autoscaling; downstream model training; validating
-rendered output images. Render-time constants are conservative engineering estimates;
-calibrating against a measured Isaac Sim run on the reference GPU is the named next
-step ([docs/cost-model.md](./docs/cost-model.md), section 5).
+rendered output images. Render-time constants for the
+A10G baseline are **measured** - a headless Isaac Sim session on the reference GPU,
+per a pre-registered protocol with raw artifacts committed
+([docs/cost-model.md](./docs/cost-model.md) section 5, [docs/calibration/](./docs/calibration/)).
 
 ## The build
 
 Eight releases, each consuming the previous milestone's guarantees - schema, cost gate,
 multi-axis governor, diversity gate, OpenUSD validity, planner, value-aware
-modification, orchestration, service. 291 tests, ruff + mypy strict, CI across Python
+modification, orchestration, service, the plan-to-Replicator
+adapter, and measured render constants. 304 tests, ruff + mypy strict, CI across Python
 3.11-3.13. Design specs in [docs/](./docs/), decision records in
 [docs/adr/](./docs/adr/), the full arc in [ROADMAP.md](./ROADMAP.md).
 

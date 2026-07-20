@@ -4,7 +4,12 @@
 > Defines what gets measured, how, on what hardware, the acceptance criteria, and the
 > spend cap. Task 9.2 executes this protocol verbatim; Task 9.3 lands the numbers.
 >
-> **Status:** Accepted - **Milestone:** M9 - **Consumed by:** hardware_profiles.json, cost-model.md section 5
+> **Status:** EXECUTED (2026-07-20) - **Milestone:** M9 - **Consumed by:** hardware_profiles.json, cost-model.md section 5
+> Results: all five runs + ingestion captured; acceptance criteria applied per section 4
+> (R5's CV documented as timing-resolution-bound). Raw artifacts: [calibration/](./calibration/).
+> Environment deviations from plan: container 4.5.0 (not 4.2.0 - the 2026 595-driver line
+> crashes both 4.2/5.1; a dated 2024 AMI with driver 550.90.07 was required), and the
+> adapter scripts gained a SimulationApp bootstrap (fed back into the adapter).
 
 ---
 

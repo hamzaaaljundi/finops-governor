@@ -20,17 +20,22 @@ from finops_governor.schemas.models import (
 
 SECONDS_PER_HOUR = 3600
 
-# Per-modality cost weights (docs/cost-model.md section 4). Substrate physics, not
+# Per-modality cost weights (docs/cost-model.md section 4) - MEASURED at M9
+# calibration (docs/calibration/): on a path-traced scene, additional annotators are
+# nearly free (the renderer already computed the data; writing it is noise). Measured
+# +0.7% for DEPTH+NORMALS together, +0.0% for seg+bbox; landed fail-safe-rounded
+# upward, kept nonzero. POSE is unmeasured (no BasicWriter annotator) and keeps a
+# conservative estimate. Substrate physics, not
 # per-device pricing, so they live with the GPU model rather than in a HardwareProfile.
 MODALITY_WEIGHTS: dict[OutputModality, float] = {
     OutputModality.RGB: 1.00,
-    OutputModality.DEPTH: 0.15,
-    OutputModality.SURFACE_NORMALS: 0.15,
-    OutputModality.SEMANTIC_SEGMENTATION: 0.02,
-    OutputModality.INSTANCE_SEGMENTATION: 0.02,
-    OutputModality.BBOX_2D: 0.02,
-    OutputModality.BBOX_3D: 0.02,
-    OutputModality.POSE: 0.02,
+    OutputModality.DEPTH: 0.005,
+    OutputModality.SURFACE_NORMALS: 0.005,
+    OutputModality.SEMANTIC_SEGMENTATION: 0.001,
+    OutputModality.INSTANCE_SEGMENTATION: 0.001,
+    OutputModality.BBOX_2D: 0.001,
+    OutputModality.BBOX_3D: 0.001,
+    OutputModality.POSE: 0.02,  # unmeasured: estimate
 }
 
 
@@ -52,9 +57,9 @@ class GpuRenderCostModel:
 
     def estimate(self, plan: GenerationPlan) -> CostEstimate:
         p = self.profile
-        per_image_s = self._base_render_seconds(plan.render_settings) * self._modality_factor(
-            plan.modalities
-        )
+        per_image_s = self._base_render_seconds(
+            plan.render_settings
+        ) * self._modality_factor(plan.modalities)
 
         per_scene: list[SceneCost] = []
         total_images = 0
