@@ -221,3 +221,5 @@ __marimo__/
 .venv/
 .DS_Store
 .DS_Store
+kit/
+calibration_session2.tgz

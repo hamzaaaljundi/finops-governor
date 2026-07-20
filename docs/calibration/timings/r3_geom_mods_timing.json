@@ -1,0 +1,11 @@
+{
+  "output_dir": "kit/out/r3_geom_mods",
+  "frames": 120,
+  "warmup_discarded": 20,
+  "steady_frames": 99,
+  "mean_s_per_frame": 1.5164,
+  "std_s": 0.0136,
+  "cv": 0.009,
+  "cv_acceptable": true,
+  "ingestion_s": 32.21
+}

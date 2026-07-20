@@ -1,0 +1,11 @@
+{
+  "output_dir": "kit/out/r5_raster",
+  "frames": 300,
+  "warmup_discarded": 50,
+  "steady_frames": 249,
+  "mean_s_per_frame": 0.038,
+  "std_s": 0.0083,
+  "cv": 0.2174,
+  "cv_acceptable": false,
+  "ingestion_s": 27.69
+}
