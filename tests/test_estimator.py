@@ -44,15 +44,20 @@ def _scene(scene_id: str, variations: int, cameras: int) -> Scene:
         environment=AssetReference(asset_id=f"{scene_id}-env", usd_path="e.usda"),
         assets=[AssetReference(asset_id=f"{scene_id}-a", usd_path="a.usda")],
         cameras=[
-            Camera(camera_id=f"{scene_id}-c{i}", transform=Transform()) for i in range(cameras)
+            Camera(camera_id=f"{scene_id}-c{i}", transform=Transform())
+            for i in range(cameras)
         ],
         variation_count=variations,
     )
 
 
-def _plan(scenes, modalities, width=1920, height=1080, spp=128, renderer=None) -> GenerationPlan:
+def _plan(
+    scenes, modalities, width=1920, height=1080, spp=128, renderer=None
+) -> GenerationPlan:
     rs = (
-        RenderSettings(width=width, height=height, samples_per_pixel=spp, renderer=renderer)
+        RenderSettings(
+            width=width, height=height, samples_per_pixel=spp, renderer=renderer
+        )
         if renderer
         else RenderSettings(width=width, height=height, samples_per_pixel=spp)
     )
@@ -70,17 +75,17 @@ def test_conforms_to_cost_model_interface():
 
 
 def test_minimal_matches_spec():
-    # docs/cost-model.md §6.1: ~$0.01 on A10G
+    # docs/cost-model.md §6.1: ~$0.01 on A10G (measured constants, M9 calibration)
     est = _model().estimate(_load("minimal.json"))
     assert est.total_images == 1
-    assert est.total_usd == pytest.approx(0.0097, rel=0.02)
+    assert est.total_usd == pytest.approx(0.0104, rel=0.02)
 
 
 def test_multi_scene_matches_spec():
-    # docs/cost-model.md §6.2: ~$0.39 on A10G, 800 images
+    # docs/cost-model.md §6.2: ~$0.41 on A10G, 800 images (measured constants, M9)
     est = _model().estimate(_load("multi_scene.json"))
     assert est.total_images == 800
-    assert est.total_usd == pytest.approx(0.3926, rel=0.01)
+    assert est.total_usd == pytest.approx(0.4119, rel=0.01)
 
 
 def test_per_scene_subtotals_sum_to_total():
@@ -119,7 +124,9 @@ def test_more_modalities_costs_more():
     scenes = [_scene("s", 100, 1)]
     rgb = _model().estimate(_plan(scenes, [OutputModality.RGB])).total_usd
     rgb_plus = (
-        _model().estimate(_plan(scenes, [OutputModality.RGB, OutputModality.DEPTH])).total_usd
+        _model()
+        .estimate(_plan(scenes, [OutputModality.RGB, OutputModality.DEPTH]))
+        .total_usd
     )
     assert rgb_plus > rgb
 
@@ -129,7 +136,9 @@ def test_rasterized_cheaper_than_path_traced():
     pt = _model().estimate(_plan(scenes, [OutputModality.RGB], spp=128)).total_usd
     rz = (
         _model()
-        .estimate(_plan(scenes, [OutputModality.RGB], spp=1, renderer=RendererType.RASTERIZED))
+        .estimate(
+            _plan(scenes, [OutputModality.RGB], spp=1, renderer=RendererType.RASTERIZED)
+        )
         .total_usd
     )
     assert rz < pt

@@ -2,33 +2,33 @@
   "t4": {
     "name": "NVIDIA T4 (AWS g4dn.xlarge)",
     "price_per_hour_usd": 0.526,
-    "ref_render_seconds": 3.0,
+    "ref_render_seconds": 3.8,
     "ref_pixels": 2073600,
     "ref_samples": 128,
-    "rasterize_factor": 0.05,
-    "fixed_ingestion_seconds": 30.0,
+    "rasterize_factor": 0.03,
+    "fixed_ingestion_seconds": 32.0,
     "contingency_factor": 1.15,
     "vram_gb": 16
   },
   "a10g": {
     "name": "NVIDIA A10G (AWS g5.xlarge)",
     "price_per_hour_usd": 1.006,
-    "ref_render_seconds": 1.2,
+    "ref_render_seconds": 1.51,
     "ref_pixels": 2073600,
     "ref_samples": 128,
-    "rasterize_factor": 0.05,
-    "fixed_ingestion_seconds": 30.0,
+    "rasterize_factor": 0.03,
+    "fixed_ingestion_seconds": 32.0,
     "contingency_factor": 1.15,
     "vram_gb": 24
   },
   "h100": {
     "name": "NVIDIA H100 80GB (single-GPU on-demand, e.g. Lambda PCIe)",
     "price_per_hour_usd": 3.29,
-    "ref_render_seconds": 0.35,
+    "ref_render_seconds": 0.45,
     "ref_pixels": 2073600,
     "ref_samples": 128,
-    "rasterize_factor": 0.05,
-    "fixed_ingestion_seconds": 30.0,
+    "rasterize_factor": 0.03,
+    "fixed_ingestion_seconds": 32.0,
     "contingency_factor": 1.15,
     "vram_gb": 80
   }

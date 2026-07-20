@@ -37,11 +37,13 @@ def test_modify_exits_1_and_prints_proposal(capsys):
 
 
 def test_redundancy_is_flagged_and_value_trimmed(capsys):
-    code, out, _ = _run(capsys, str(FIXTURES / "diversity" / "redundant" / "production_scale.json"))
+    code, out, _ = _run(
+        capsys, str(FIXTURES / "diversity" / "redundant" / "production_scale.json")
+    )
     assert code == 1  # ADR 0007: redundancy is MODIFIABLE
-    assert "$373.18" in out  # the waste, priced
+    assert "$391.19" in out  # the waste, priced (measured constants, M9)
     assert "value:" in out and "50000 -> 26" in out  # and the plan without it
-    assert "$0.20" in out
+    assert "$0.21" in out
 
 
 def test_profile_flag(capsys):
