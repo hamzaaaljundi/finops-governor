@@ -89,6 +89,12 @@ Replicator/Isaac run - a one-day data-entry change, since every constant lives i
 800 images, 1920x1080, 128 SPP, modality factor 1.21, budget $2500 -> **$0.39** -> APPROVE.
 
 ### 6.3 Same plan, three devices
+Measured constants narrowed the gap and made the ranking job-shape-dependent: on a
+render-dominated job (the production fixture: $381.41 on H100 vs $391.32 on A10G)
+the fast card's speed edge now wins by ~2.5%, while jobs with a meaningful
+fixed-overhead share (this example) keep the mid-tier ahead. That the answer depends
+on the job is the argument for computing it per job - which is what `--advise` does.
+
 The identical multi_scene plan through the same code path:
 
 | Profile | GPU-hours | Cost |
