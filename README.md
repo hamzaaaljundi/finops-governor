@@ -26,7 +26,7 @@ plan is recoverable, the gate builds the cheaper, coverage-preserving version it
 ## Install
 
 ```bash
-git clone https://github.com/hamzaaljundi/finops-governor && cd finops-governor
+git clone https://github.com/hamzaaaljundi/finops-governor && cd finops-governor
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e .
 ```
