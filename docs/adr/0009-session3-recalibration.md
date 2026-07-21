@@ -1,7 +1,7 @@
 # ADR 0009 - Session-3 recalibration: lit-scene constants supersede session 2
 
 **Status:** Accepted (supersedes the session-2 values in hardware_profiles.json;
-amends cost-model.md section 5)
+amends cost-model.md section 5); amended 2026-07-21, r5 warm-up re-analysis
 
 ## Context
 
@@ -72,4 +72,38 @@ not pixels.
   twice: session 2 shipped 1.51 in good faith; session 3 shipped 3.5897 when the
   defect was found and fixed. Calibration remains falsifiable, which is the
   point.
-EOF
+
+## Amendment (2026-07-21): r5 warm-up re-analysis closes the open follow-up
+
+Decision 4's open follow-up - re-analyzing r5 with a wider warm-up window - was run at
+`--warmup 100` (double the original 50, on the same already-300-frame run the
+protocol's own stability clause calls for). Result: CV **worsened**, 0.57 -> 3.6443
+(mean essentially unchanged: 0.072 -> 0.0704). A genuine shader/JIT warm-up transient
+shrinks under a wider warm-up window; this grew six-fold instead, which rules out
+warm-up drift and points at the instrumentation.
+
+Per-frame delta inspection confirms it: of 199 steady-state deltas, 185 are exactly
+0.0s and 14 are exactly 1.0s - only two distinct values in the whole steady state.
+`extract_timings.py` derives per-frame time from consecutive PNG file **mtimes**
+(docstring, and matches its implementation), not from the run logs docs/calibration.md
+section 3 specifies as the timing source - a documentation/implementation mismatch
+this re-analysis surfaced. At raster's true rate of ~14 frames/second, most
+consecutive frames complete inside the same rounded second (delta 0) and roughly
+1-in-14 straddle a second boundary (delta 1): 14/199 = 0.0704, matching the reported
+mean exactly. Modeling this as a pure Bernoulli process (p = 0.0704, zero real
+render-time variance) predicts std 0.2557 and CV 3.635 against the reported 0.2564 /
+3.6443 - within rounding. **The instability is fully explained by 1-second mtime
+quantization against a sub-0.1-second-per-frame signal; no genuine render-time
+jitter is required to produce it.** The mean is not discredited by this (it remains,
+in effect, an unbiased boundary-crossing rate estimate), but a per-frame CV computed
+on data this coarse is not a meaningful stability measure, and no warm-up window can
+fix an instrumentation floor.
+
+**Decision, closed:** `rasterize_factor` stays **0.03** (fail-safe, conservative,
+over-predicts raster cost) - not because raster rendering is unstable in the sense the
+protocol's stability clause means, but because mtime-based timing cannot resolve a
+signal this fast. A future rasterize_factor measurement needs in-app sub-second
+timestamp logging (matching what section 3 already specifies as the intended source)
+or a batched-timing design (time N frames, divide), not per-frame mtime deltas. This
+is now a documented limitation of the measurement method, not an open question about
+the render itself.

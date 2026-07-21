@@ -73,7 +73,12 @@ standard deviation of the steady-state 100):
 | R5 | 1920x1080, real-time (rasterized) mode, RGB | `rasterize_factor` |
 | I1 | cold start to first-frame-ready, 3 trials | `fixed_ingestion_seconds` |
 
-Timing source: wall-clock around Replicator's per-frame write, from the run logs.
+Timing source: consecutive PNG output file mtimes (`session_kit/extract_timings.py`),
+not run-log timestamps as an earlier draft of this section specified - the actual
+tooling measures via BasicWriter's output files. This resolves to whatever the
+filesystem's mtime granularity is (observed: 1 second) and is adequate for the
+multi-second-per-frame path-traced runs (R1-R4), but breaks down for anything
+approaching or faster than that granularity - see ADR 0009's amendment on R5.
 Everything captured raw: `nvidia-smi` snapshot, container tag, timestamps, the full
 console log per run - committed under `docs/calibration/` so the run is auditable.
 
