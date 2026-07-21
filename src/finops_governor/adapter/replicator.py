@@ -21,6 +21,8 @@ Design (v1, limits stated):
   skipped with a warning comment.
 """
 
+import math
+
 from finops_governor.schemas import (
     GenerationPlan,
     OutputModality,
@@ -155,15 +157,29 @@ def _kind_of(param: RandomizationParameter) -> str | None:
     return None
 
 
-def _choices(param: RandomizationParameter, lo: float, hi: float) -> str:
-    """`levels` evenly spaced values across [lo, hi] - the declared capacity, honored."""
+def _choices(
+    param: RandomizationParameter, lo: float, hi: float, period: float | None = None
+) -> str:
+    """`levels` evenly spaced values across [lo, hi] - the declared capacity, honored.
+
+    `period`, when given, marks the parameter as circular over that period (e.g. a
+    360-degree rotation). If the declared [lo, hi] range spans exactly one full
+    period, [lo, hi] is treated as half-open: lo and hi name the same physical value
+    (0 degrees == 360 degrees), so including both would silently duplicate one
+    declared level's worth of real diversity (session-3 calibration bug: a declared
+    `levels=4` azimuth sweep emitted [0, 120, 240, 360] - only 3 distinct rotations on
+    disk, not 4). A partial arc (e.g. 0-180) is NOT circular in this sense - its
+    endpoints are genuinely different orientations, so both are kept.
+    """
     lo = param.min_value if param.min_value is not None else lo
     hi = param.max_value if param.max_value is not None else hi
     k = param.levels
+    is_full_period = period is not None and math.isclose(hi - lo, period, rel_tol=1e-9)
     if k == 1:
         values = [lo]
     else:
-        step = (hi - lo) / (k - 1)
+        divisor = k if is_full_period else (k - 1)
+        step = (hi - lo) / divisor
         values = [round(lo + i * step, 4) for i in range(k)]
     return repr(values)
 
@@ -177,7 +193,8 @@ def _randomizer_lines(scene: Scene) -> list[str]:
         if kind == "rotation":
             out.append(
                 f"rep.modify.pose(input_prims=assets, rotation=rep.distribution.choice("
-                f"[(0, y, 0) for y in {_choices(param, 0.0, 360.0)}]))  # {param.name}"
+                f"[(0, y, 0) for y in {_choices(param, 0.0, 360.0, period=360.0)}]))"
+                f"  # {param.name}"
             )
         elif kind == "position":
             out.append(

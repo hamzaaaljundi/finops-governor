@@ -1,4 +1,4 @@
-# Roadmap - FinOps Governor for Synthetic Data Pipelines
+# Roadmap - FinOps Governor for Physical AI Synthetic Data Pipelines
 
 > A pre-flight gate for **training-value-per-GPU-dollar**. An LLM plans the job; a
 > deterministic, multi-axis gate decides whether it is worth running - refusing jobs that
@@ -57,10 +57,10 @@ downstream model training; validating rendered output images.
 - **M6.5 - Close the loop** (`v0.6.5-value-gate`). The gate acts on the waste it
   prices: the diversity model upgraded to expected coverage (coupon-collector - smooth,
   no best-case cliff, headline dollars preserved to the cent) with an
-  effective-cost-per-distinct metric ($0.004/image nominal vs $23.33/distinct on the
+  effective-cost-per-distinct metric ($0.0093/image nominal vs $58.14/distinct on the
   production example); value-aware modification (ADR 0007) - diversity findings are
   MODIFIABLE, the proposal is built value-pass-then-budget-pass, and the redundant production
-  job (now $391 under measured constants) comes back as a $0.21 same-coverage proposal; a named adversarial prompt-injection
+  job (now $930.27 under session-3 measured constants) comes back as a $0.50 same-coverage proposal; a named adversarial prompt-injection
   suite attacking the trust boundary; mypy (strict settings) added to CI.
 
 - **M7 - Orchestration + audit trail** (`v0.7-orchestration`). The pipeline as pure
@@ -82,17 +82,41 @@ downstream model training; validating rendered output images.
   `finops-governor` console entry point, published to TestPyPI; a reproducible VHS
   demo (the GIF is generated from `demo/demo.tape`, never hand-recorded).
 
+- **M9 - Make it real** (`v1.1-calibrated`). The governor fronting the actual
+  industry stack, not just hand-authored fixtures. **Task 9.4:** a plan-to-Replicator
+  adapter (`generate_replicator_script`) - pure string assembly, testable without
+  Isaac Sim, emitting a standalone headless script for a single-scene plan; unknown
+  randomization parameters and unsupported modalities are skipped with an in-script
+  trust-boundary warning, the same philosophy as the diversity plausibility warnings.
+  **Calibration (ADR 0009):** a measured EC2 g5.xlarge / A10G session found and fixed
+  a black-frame defect (the adapter's only light lived inside the frame trigger, where
+  `rep.create` never executes) that had understated session-2 render cost by a
+  correction ratio of 2.3773x; re-measured lit-scene constants replace it
+  (`ref_render_seconds` 1.51 -> 3.5897), plus a new per-scene `annot_ingestion_extra_seconds`
+  term now that annotation modalities were shown to cost ingestion time, not per-frame
+  render time. t4/h100 are scaled by the same ratio and marked extrapolated;
+  `rasterize_factor` and one measurement point were excluded on stated statistical
+  grounds rather than accepted on a single run. **Coverage honesty (calibration.md
+  section 7):** real-frame Otsu pixel-clustering measured far less realized diversity
+  than the declared-capacity model predicted; diagnosed as an instrument limitation
+  (lighting dominates pixel distance, not the declared randomization axes) rather than
+  a model failure, and the investigation surfaced a genuine adapter bug - a full
+  360-degree rotation swept through both its 0 and 360 endpoints, which name the same
+  physical orientation, silently losing one declared level's worth of real diversity
+  per circular axis. Fixed with a period-aware, half-open interval for circular
+  parameters only; partial arcs (e.g. a declared 0-180 sweep) correctly keep both
+  endpoints. 311 tests.
+
 ### Remaining
 
-- **M9 (post-v1.0) - Make it real.** Calibrate the render constants against a measured
-  Isaac Sim run on the reference GPU (rented g5.xlarge A10G, ~one day); a thin
-  plan-to-Replicator adapter and a real-frames demo video - the governor fronting the
-  actual industry stack. Candidate extensions beyond M9, in docs and ADRs: a
-  human-in-the-loop approval checkpoint (the ADR 0008 threshold, LangGraph's home
-  ground) and portfolio governance (allocating one budget across N candidate jobs by
-  expected coverage per dollar). FastAPI endpoint, `pip install` polish, a
-  shipped sample stage, and a README demo (GIF) showing the combined verdict on a real
-  job. The CLI itself shipped early, at M5, and gained plan mode at M6.
+- **Real-frames demo video (post-M9).** The `demo/` GIF is still the M8 VHS terminal
+  recording; a video showing the M9 adapter's emitted script actually rendering on
+  Isaac Sim, calibrated against the ADR 0009 measured constants, is the natural
+  follow-on and the highest-ROI next move.
+- Candidate extensions beyond that, in docs and ADRs: a human-in-the-loop approval
+  checkpoint (the ADR 0008 threshold, LangGraph's home ground) and portfolio
+  governance (allocating one shared budget across N candidate jobs by expected
+  coverage per dollar - the natural, unclaimed territory once a single job is governed).
 
 ---
 
@@ -109,6 +133,7 @@ downstream model training; validating rendered output images.
 | `v0.6.5-value-gate` | M6.5 | **The gate removes the waste it prices** |
 | `v0.7-orchestration` | M7 | End-to-end, multi-axis audit trail |
 | `v1.0` | M8 | **Runnable, installable, served, demonstrated** |
+| `v1.1-calibrated` | M9 | Cost estimates hold against measured Isaac Sim data; the governed plan runs on the real stack |
 
 The commit history tells the argument: deterministic spine first, headline innovation
 before the risky milestone, LLM last.

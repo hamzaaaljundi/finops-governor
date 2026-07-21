@@ -80,7 +80,32 @@ def test_declared_levels_are_honored_exactly():
     script = generate_replicator_script(_plan(parameters=[{"name": "azimuth", "levels": 12}]))
     choice_line = next(line for line in script.splitlines() if "# azimuth" in line)
     assert choice_line.count(",") >= 11  # 12 values in the choice list
-    assert "0.0" in choice_line and "360.0" in choice_line
+    # Circular: 0 degrees == 360 degrees, so the endpoint is never duplicated (see
+    # test_circular_params_never_duplicate_endpoints for the collision this prevents).
+    assert "0.0" in choice_line and "330.0" in choice_line
+    assert "360.0" not in choice_line
+
+
+def test_circular_params_never_duplicate_endpoints():
+    # Session-3 calibration bug: azimuth is a full 360-degree sweep, so 0 and 360
+    # name the same physical rotation. A naive closed-interval linspace emits both,
+    # silently losing one declared level's worth of true diversity - a declared
+    # `levels=4` sweep became [0, 120, 240, 360], only 3 distinct rotations on disk.
+    script = generate_replicator_script(_plan(parameters=[{"name": "azimuth", "levels": 4}]))
+    choice_line = next(line for line in script.splitlines() if "# azimuth" in line)
+    assert "360.0" not in choice_line
+    assert all(v in choice_line for v in ("0.0", "90.0", "180.0", "270.0"))
+
+
+def test_partial_rotation_arc_keeps_both_endpoints():
+    # Only a full 360-degree declared range is circular in this sense; a partial arc
+    # (e.g. a half-turn) has two genuinely different orientations at its endpoints,
+    # so deduplicating them would be wrong - non-circular linspace still applies.
+    script = generate_replicator_script(
+        _plan(parameters=[{"name": "yaw", "levels": 4, "min_value": 0, "max_value": 180}])
+    )
+    choice_line = next(line for line in script.splitlines() if "# yaw" in line)
+    assert "0.0" in choice_line and "180.0" in choice_line
 
 
 def test_declared_range_is_honored():

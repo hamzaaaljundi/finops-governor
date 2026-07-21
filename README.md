@@ -42,7 +42,7 @@ pip install --index-url https://test.pypi.org/simple/ \
 ## Try it
 
 ```bash
-# the headline: a $391 job that is ~100% redundant -> priced AND trimmed (exit 1)
+# the headline: a $930 job that is ~100% redundant -> priced AND trimmed (exit 1)
 finops-governor fixtures/diversity/redundant/production_scale.json
 
 # affordable and diverse, but the arm is authored through the floor -> BLOCKED, $0 spent
@@ -63,11 +63,11 @@ A real session:
 
 ```text
 pipeline:  "50,000 variations of a robotic arm on an assembly floor, RGB and depth"  (budget $1,000.00, NVIDIA A10G (AWS g5.xlarge))
-  1. plan     planned 'robotic-arm-assembly-floor-001' (assembly-floor-robotic-arm x50000)
-  2. gate     verdict APPROVE on 'robotic-arm-assembly-floor-001': Estimated $14.79 is within the $1000.00 budget.
-  3. execute  execution stub: would render 150,000 images (14.70 GPU-hours, $14.79) on NVIDIA A10G (AWS g5.xlarge)
+  1. plan     planned 'robotic-arm-assembly-floor-001' (assembly-floor-robotic-arm x25000, assembly-floor-robotic-arm-overhead x25000)
+  2. gate     verdict APPROVE on 'robotic-arm-assembly-floor-001': [WARNING] diversity: scene 'assembly-floor-robotic-arm': declaration plausibility - parameter(s) 'arm_joint_configuration' (500) claim more than 64 meaningfully distinct levels; the coverage judgment trusts these declarations. | [WARNING] diversity: scene 'assembly-floor-robotic-arm': declaration plausibility - declared capacity (~1600000000 configurations) exceeds the 25000 variations by over 100x; most declared configurations will never be sampled, and the coverage judgment trusts the declaration. | [WARNING] diversity: scene 'assembly-floor-robotic-arm-overhead': declaration plausibility - parameter(s) 'arm_joint_configuration' (500) claim more than 64 meaningfully distinct levels; the coverage judgment trusts these declarations. | [WARNING] diversity: scene 'assembly-floor-robotic-arm-overhead': declaration plausibility - declared capacity (~1600000000 configurations) exceeds the 25000 variations by over 100x; most declared configurations will never be sampled, and the coverage judgment trusts the declaration.
+  3. execute  execution stub: would render 100,000 images (25.63 GPU-hours, $25.79) on NVIDIA A10G (AWS g5.xlarge)
 status:    EXECUTED
-final:     $14.79 of $1,000.00 budget
+final:     $25.79 of $1,000.00 budget
 audit:     audit.json
 ```
 
@@ -140,7 +140,7 @@ per a pre-registered protocol with raw artifacts committed
 Eight releases, each consuming the previous milestone's guarantees - schema, cost gate,
 multi-axis governor, diversity gate, OpenUSD validity, planner, value-aware
 modification, orchestration, service, the plan-to-Replicator
-adapter, and measured render constants. 304 tests, ruff + mypy strict, CI across Python
+adapter, and measured render constants. 311 tests, ruff + mypy strict, CI across Python
 3.11-3.13. Design specs in [docs/](./docs/), decision records in
 [docs/adr/](./docs/adr/), the full arc in [ROADMAP.md](./ROADMAP.md).
 
