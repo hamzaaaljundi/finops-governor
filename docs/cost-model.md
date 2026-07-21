@@ -27,6 +27,8 @@ digital-twin rendering.
 
 ## 3. The cost formula (affine, per-modality, deterministic)
 
+## 3. The cost formula (affine, per-modality, deterministic)
+
 ```
 base_render_s(w, h, spp, PATH_TRACED) = ref_render_seconds * (w*h / ref_pixels) * (spp / ref_samples)
 base_render_s(w, h,      RASTERIZED)  = rasterize_factor * (w*h / ref_pixels)     # spp = 1
@@ -34,7 +36,9 @@ per_image_s = base_render_s(...) * modality_factor(modalities)
 
 for each scene:
     images  = variation_count * num_cameras
-    scene_s = fixed_ingestion_seconds + images * per_image_s
+    fixed_s = fixed_ingestion_seconds
+              + (annot_ingestion_extra_seconds if annotation-tier modalities present)
+    scene_s = fixed_s + images * per_image_s
 
 total_s   = (sum of scene_s) * contingency_factor
 gpu_hours = total_s / 3600
@@ -54,6 +58,10 @@ All inputs are static properties of the plan or profile - nothing runtime-depend
 `modality_factor = sum of weights`. Example: RGB + DEPTH + SEMANTIC_SEGMENTATION +
 INSTANCE_SEGMENTATION + BBOX_2D = 1.21.
 
+Session-3 measurement note: annotation-tier modalities were measured to cost per-scene
+ingestion time rather than per-frame render time (r4 per-frame equaled r1 within noise;
+r4 ingestion +14.72 s) - captured by `annot_ingestion_extra_seconds` in section 3.
+
 ## 5. Reference hardware profiles
 
 $/hr figures verified against live cloud pricing (Task 2.2). AWS offers H100 only in
@@ -62,23 +70,28 @@ from a specialized cloud.
 
 | Profile | price_per_hour_usd | ref_render_seconds | vram_gb | Character |
 |---|---|---|---|---|
-| NVIDIA T4 (`g4dn.xlarge`) | 0.526 | 3.00 | 16 | Cheap, slow |
-| **NVIDIA A10G (`g5.xlarge`)** | **1.006** | **1.20** | **24** | **Mid baseline** |
-| NVIDIA H100 (single-GPU on-demand) | 3.29 | 0.35 | 80 | Fast, pricey |
+| NVIDIA T4 (`g4dn.xlarge`) | 0.526 | 9.03 (extrapolated) | 16 | Cheap, slow |
+| **NVIDIA A10G (`g5.xlarge`)** | **1.006** | **3.5897 (measured)** | **24** | **Mid baseline** |
+| NVIDIA H100 (single-GPU on-demand) | 3.29 | 1.07 (extrapolated) | 80 | Fast, pricey |
 
 Shared constants: `ref_pixels` = 2,073,600 (1920x1080), `ref_samples` = 128,
-`rasterize_factor` = 0.05, `fixed_ingestion_seconds` = 30.0, `contingency_factor` = 1.15.
+`rasterize_factor` = 0.03, `fixed_ingestion_seconds` = 38.46,
+`contingency_factor` = 1.15. The a10g profile additionally carries
+`annot_ingestion_extra_seconds` = 14.72: annotation modalities were measured to
+cost per-scene ingestion time, not per-frame render time (session 3, r4 vs r1).
 
-**Baseline anchor:** a 1920x1080, 128-SPP, path-traced RGB frame ~= 1.2 s on the A10G.
+**Baseline anchor:** a 1920x1080, 128-SPP, path-traced RGB frame = 3.5897 s on
+the A10G - measured on a lit scene (session 3, 2026-07-21, CV 0.051).
 
-**Calibration status - read this.** The $/hr prices are verified against live cloud
-pricing; the *render-time constants* (`ref_render_seconds`, `rasterize_factor`,
-`fixed_ingestion_seconds`, the modality weights) are **illustrative engineering estimates,
-chosen conservatively - not measured benchmarks**. They make the estimator's *behavior*
-correct (deterministic, monotonic in resolution/samples/images, conservative) while its
-*absolute accuracy* is uncalibrated. Calibrating these constants against a measured
-Replicator/Isaac run - a one-day data-entry change, since every constant lives in
-`hardware_profiles.json` - is the first step toward production use.
+**Calibration status - read this.** The a10g row is **measured**: headless Isaac
+Sim 4.5.0 (digest-pinned) on a rented g5.xlarge, lit path-traced scenes, per the
+pre-registered protocol in docs/calibration.md, raw artifacts committed. This
+supersedes the 2026-07-20 session-2 measurement (1.51 s), which timed frames
+rendered unlit due to the adapter's black-frame defect (ADR 0009). T4 and H100
+remain **extrapolated** - session-2 values scaled by the measured lit-correction
+ratio 2.3773, not directly measured. `rasterize_factor` retains the conservative
+0.03: the session-3 measurement (0.020) failed the stability criterion (CV 0.57)
+and does not ship. Scene-complexity variance remains excluded by design.
 
 ## 6. Worked examples (verified)
 
@@ -110,6 +123,11 @@ fastest (H100) - surfacing that is exactly what the governor is for.
 500,000 images, 3840x2160, 256 SPP, A10G -> **$1,897.33** -> over a $1000 budget ->
 BLOCK / MODIFY. Costs reach the range that justifies a governor only at production scale.
 
+> **Section 6 status (temporary):** the dollar figures above are derived from the
+> superseded session-2 constants and are being re-derived from the session-3
+> constants via the 9.3 sweep (ADR 0009). Do not cite them until this notice is
+> removed.
+
 ## 7. Scope and exclusions
 
 **The governor is substrate-agnostic** via the `CostModel` interface; CPU and TPU models
@@ -121,3 +139,4 @@ state**, **BVH-rebuild timing**, **per-frame ray-depth variance**.
 
 **Fail-safe principle:** constants are chosen conservatively so the estimator errs toward
 over-prediction. A governor must never under-predict a budget-buster.
+EOF

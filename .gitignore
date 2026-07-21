@@ -223,3 +223,4 @@ __marimo__/
 .DS_Store
 kit/
 calibration_session2.tgz
+calibration_session*.tgz

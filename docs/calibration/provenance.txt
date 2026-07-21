@@ -1,0 +1,6 @@
+name, driver_version, vbios_version
+NVIDIA A10G, 550.90.07, 94.02.75.00.01
+REPOSITORY                 TAG       DIGEST                                                                    IMAGE ID       CREATED         SIZE
+nvcr.io/nvidia/isaac-sim   4.5.0     sha256:c2f47dc82a7714af08d3766efe80ac9d084c2b37b5d0dfbd074797ec56390fc7   ca34eb4ab11f   17 months ago   15GB
+6.5.0-1024-aws
+g5.xlarge

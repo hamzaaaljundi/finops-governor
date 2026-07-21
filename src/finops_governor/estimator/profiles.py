@@ -36,6 +36,10 @@ class HardwareProfile(StrictModel):
     ref_samples: int = Field(..., gt=0)
     rasterize_factor: float = Field(..., gt=0)
     fixed_ingestion_seconds: float = Field(..., ge=0)
+    # Extra per-scene ingestion when annotation modifiers are active (session-3
+    # measurement: r4 53.18s vs r1 38.46s on the A10G). Defaults to 0.0 for
+    # profiles where it has not been measured; omitted from their JSON entries.
+    annot_ingestion_extra_seconds: float = Field(0.0, ge=0)
     contingency_factor: float = Field(..., ge=1)  # overhead never reduces cost
     vram_gb: int = Field(..., gt=0)
 

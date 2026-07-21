@@ -4,12 +4,18 @@
 > Defines what gets measured, how, on what hardware, the acceptance criteria, and the
 > spend cap. Task 9.2 executes this protocol verbatim; Task 9.3 lands the numbers.
 >
-> **Status:** EXECUTED (2026-07-20) - **Milestone:** M9 - **Consumed by:** hardware_profiles.json, cost-model.md section 5
-> Results: all five runs + ingestion captured; acceptance criteria applied per section 4
-> (R5's CV documented as timing-resolution-bound). Raw artifacts: [calibration/](./calibration/).
-> Environment deviations from plan: container 4.5.0 (not 4.2.0 - the 2026 595-driver line
-> crashes both 4.2/5.1; a dated 2024 AMI with driver 550.90.07 was required), and the
-> adapter scripts gained a SimulationApp bootstrap (fed back into the adapter).
+> **Status:** EXECUTED twice - session 2 (2026-07-20) and session 3 (2026-07-21,
+> supersedes) - **Milestone:** M9 - **Consumed by:** hardware_profiles.json, cost-model.md section 5
+> Session 2 executed the protocol but measured unlit frames (the adapter's
+> black-frame defect, found and fixed in the same session). Session 3 re-ran the
+> full matrix on lit scenes under the identical pinned environment: R1/R3/R4
+> stable (CV ~0.05) and shipped; R2 excluded (CV 0.2264); R5's measured
+> rasterize ratio rejected (CV 0.57, timing-resolution-bound). The session-3
+> coverage pair (600/26 frames, lit) feeds the real-data coverage analysis.
+> Constants supersession rationale: ADR 0009. Raw artifacts: [calibration/](./calibration/).
+> Environment deviations from plan: container 4.5.0 (not 4.2.0 - the 2026
+> 595-driver line crashes both 4.2/5.1; a dated 2024 AMI with driver 550.90.07
+> was required); adapter scripts are natively standalone since the M9.2 fix.
 
 ---
 
