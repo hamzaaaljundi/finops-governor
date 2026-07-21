@@ -1,0 +1,43 @@
+{
+  "capacity_k": 20,
+  "results": [
+    {
+      "dir": "kit/out/cov_redundant",
+      "frames": 600,
+      "threshold": 12.1808,
+      "threshold_source": "otsu(pairwise)",
+      "distance_stats": {
+        "min": 0.0,
+        "median": 8.5493,
+        "max": 22.1942
+      },
+      "measured_distinct": 2,
+      "predicted_distinct": 20.0,
+      "cluster_sizes": [
+        475,
+        125
+      ],
+      "measured_redundant_fraction": 0.9967,
+      "predicted_redundant_fraction": 0.9667
+    },
+    {
+      "dir": "kit/out/cov_trimmed",
+      "frames": 26,
+      "threshold": 11.2025,
+      "threshold_source": "otsu(pairwise)",
+      "distance_stats": {
+        "min": 0.0111,
+        "median": 8.0473,
+        "max": 21.7981
+      },
+      "measured_distinct": 2,
+      "predicted_distinct": 14.73,
+      "cluster_sizes": [
+        22,
+        4
+      ],
+      "measured_redundant_fraction": 0.9231,
+      "predicted_redundant_fraction": 0.4335
+    }
+  ]
+}

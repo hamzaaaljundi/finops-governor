@@ -108,3 +108,32 @@ One scene, one driver, one container version, 100-frame steady states: a **calib
 point**, not a benchmark suite. cost-model.md section 5 will say exactly that: measured
 on the reference hardware under a pinned environment, run logs committed, constants
 rounded conservatively - and scene-complexity variance remains excluded by design.
+
+## 7. Session-3 coverage analysis (real lit frames, k=20)
+
+The coverage pair (600-frame redundant / 26-frame trimmed plan, 3.1 azimuth x
+lighting grid, declared capacity k=20) was analyzed by pairwise pixel-distance
+clustering (session_kit/coverage_analysis.py, Otsu-thresholded L2).
+
+**Result: the instrument, not the model, is the binding constraint.** At the
+automatic threshold both runs measure 2 distinct clusters against predictions of
+20.0 and 14.7 - the split isolating the dimmest dome-intensity level (cluster
+sizes 475/125 =~ 600 x 4/5 / 1/5). A manual threshold sweep reveals scale
+hierarchy: t=6 -> 4 clusters (lighting levels), t=3 -> 12, t=1.5 -> 19 (near
+the declared space). Global lighting dominates pixel distance; object azimuth
+on untextured primitives is a near-noise-level signal at 64 spp undenoised.
+
+Two honesty notes. The sweep threshold is post-hoc - the claim is that cluster
+structure exists at scales matching both declared parameters, not that the
+predicted count was confirmed. And 19 overshoots the physically distinct space:
+the azimuth levels [0, 120, 240, 360] collide at 0=360 (a real declared-space
+defect this analysis surfaced - declared k=20, true k=15, 25% phantom
+capacity; precisely the waste class the diversity gate prices), so ~4 of the
+19 clusters are noise-splits.
+
+**Conclusion:** the expected-coverage model reasons over declared parameter
+space (ADR 0002: the gate never inspects generated data) and is not contradicted
+by this measurement; empirically validating it end-to-end requires ground-truth
+parameter logging per frame (a Replicator writer extension), not appearance
+clustering on a minimal gray scene. Documented per protocol clause 2: a known
+instrument limit, not force-fitted.
