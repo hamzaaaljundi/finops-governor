@@ -69,7 +69,7 @@ future `replan` mode slots in without touching the loop.
 APPROVES - for all three modify shapes (value-trim only, value+budget, budget-only).
 Value trims land exactly at the justified count (no diversity finding re-fires); budget
 trims fit by construction (no cost finding re-fires). Adoption therefore converges in
-exactly one additional gate pass. Verified: the production fixture's MODIFY -> adopt -> APPROVE ($391.32 -> $0.21 under the M9 measured constants).
+exactly one additional gate pass. Verified: the production fixture's MODIFY -> adopt -> APPROVE ($930.27 -> $0.50 under the M9 measured constants).
 
 ## 4. Bounded looping and halting
 

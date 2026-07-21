@@ -41,8 +41,8 @@ effective_cost_per_distinct   = scene_subtotal_usd / expected_distinct
 ```
 
 The second number is the sharpest framing this model produces: the **effective unit
-price of training signal**. A production job can cost $0.004 per image nominally while
-paying $23 per distinct configuration - the number the model can actually learn from.
+price of training signal**. A production job can cost $0.0093 per image nominally while
+paying $58 per distinct configuration - the number the model can actually learn from.
 
 A finding fires when `redundant_fraction` exceeds a threshold (default **0.5**: more than
 half the scene's spend is expected redundant). The finding is **MODIFIABLE** (ADR 0007):
@@ -50,7 +50,7 @@ redundancy above threshold is recoverable by construction (redundant_fraction(1)
 every capacity), and each finding carries `justified_variation_count` - the largest count
 whose expected waste is within the threshold. The Governor's value-trim pass reads that
 target and proposes the plan without the waste: the production example below is flagged
-at $391.32 and comes back as a 26-variation proposal at ~$0.21, same expected-coverage
+at $930.27 and comes back as a 26-variation proposal at ~$0.50, same expected-coverage
 bar. Value trims are applied before any budget trim - waste removal costs nothing;
 budget trimming costs signal.
 
@@ -85,11 +85,11 @@ entirely in the honest region near capacity, where v1 was blind.
 | Near-capacity | 96 | 90 | ~58.6 | 34.9% | $0.04 | - | - | clean; v1 reported 0% here |
 | Double-oversampled | 100 | 200 | ~86.6 | 56.7% | $0.11 | $0.06 | $0.0012 | WARNING; invisible to v1 |
 | Redundant | 96 | 5,000 | ~96 | 98.1% | $2.27 | **$2.22** | $0.024 | WARNING |
-| Production | 16 | 50,000 (x2 cam) | 16 | ~100% | $391.32 | **$391.19** | **$24.46** | WARNING |
+| Production | 16 | 50,000 (x2 cam) | 16 | ~100% | $930.27 | **$929.97** | **$58.14** | WARNING |
 
-The production row is the point, twice: a $391 job whose spend is almost entirely
-redundant, flagged before any GPU spins up - and a nominal $0.004/image job whose
-effective price is **$24.46 per distinct configuration**.
+The production row is the point, twice: a $930 job whose spend is almost entirely
+redundant, flagged before any GPU spins up - and a nominal $0.0093/image job whose
+effective price is **$58.14 per distinct configuration**.
 
 ## 5. Scope and assumptions (read this)
 
@@ -133,6 +133,11 @@ thus spending) the very GPU-hours the gate exists to protect.
 Framing redundancy as a pre-execution gate is the contribution; this model is a credible,
 honest v2 of the estimate, with its gap to a production model documented rather than hidden.
 
-> Dollar figures in this document reflect the MEASURED cost constants (M9
-> calibration, docs/calibration/); they were $373.18/$23.33 under the pre-calibration
-> estimates - calibration revealed the waste was underpriced by ~5%.
+> Dollar figures in this document reflect the session-3 MEASURED cost constants (ADR
+> 0009, docs/calibration/). They passed through three stages: a pre-calibration
+> hand-authored estimate ($373.18 / $23.33 per distinct); session-2 measured but
+> unknowingly unlit, ~5% higher ($391.32 / $24.46); and session-3's lit-scene
+> correction (2.3773x, ADR 0009), landing at the $930.27 / $58.14 figures shown above.
+> The session-2 -> session-3 jump dwarfs the pre-calibration -> session-2 one, because
+> the earlier figure was measuring an unlit scene doing almost no path-tracing work,
+> not a real per-frame cost.

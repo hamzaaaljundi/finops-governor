@@ -154,4 +154,3 @@ state**, **BVH-rebuild timing**, **per-frame ray-depth variance**.
 
 **Fail-safe principle:** constants are chosen conservatively so the estimator errs toward
 over-prediction. A governor must never under-predict a budget-buster.
-EOF
