@@ -28,14 +28,15 @@ def test_ranking_is_cheapest_first(multi_scene_plan):
 
 
 def test_reproduces_the_m2_worked_example(multi_scene_plan):
-    # cost-model.md section 6.3 with MEASURED constants (M9): the mid-tier A10G still
-    # beats both the cheapest-per-hour (T4, too slow) and the fastest (H100, too
-    # pricey per hour) - the punchline survived calibration
+    # cost-model.md section 6.3 with session-3 measured constants (ADR 0009): the
+    # mid-tier A10G still beats both the cheapest-per-hour (T4) and the fastest
+    # (H100) on this fixed-overhead-heavy job - the punchline survived
+    # recalibration, with a narrowed gap (a10g $0.96 vs h100 $0.99, ~2.4%)
     advice = advise(multi_scene_plan)
     assert advice.recommended_profile_id == "a10g"
     assert [r.profile_id for r in advice.ranking] == ["a10g", "h100", "t4"]
-    assert advice.ranking[0].total_usd == pytest.approx(0.41, abs=0.01)
-    assert advice.ranking[2].total_usd == pytest.approx(0.53, abs=0.01)
+    assert advice.ranking[0].total_usd == pytest.approx(0.96, abs=0.01)
+    assert advice.ranking[2].total_usd == pytest.approx(1.24, abs=0.01)
 
 
 def test_max_savings_is_worst_minus_best(multi_scene_plan):

@@ -47,20 +47,28 @@ cost_usd  = gpu_hours * price_per_hour_usd
 
 All inputs are static properties of the plan or profile - nothing runtime-dependent.
 
-## 4. Per-modality weights (three-tier)
+### 4. Per-modality weights (three-tier)
+
+Weights are MEASURED (M9 calibration): on a path-traced scene, additional
+annotators are nearly free - the renderer has already computed the data;
+writing it is noise. Measured +0.7% for DEPTH+SURFACE_NORMALS together, +0.0%
+for seg+bbox; landed fail-safe-rounded upward, kept nonzero. POSE is unmeasured
+(no BasicWriter annotator) and keeps a conservative estimate.
 
 | Tier | Modalities | Weight |
 |---|---|---|
 | Heavy | `RGB` | 1.00 |
-| Medium | `DEPTH`, `SURFACE_NORMALS` | 0.15 |
-| Trivial | `SEMANTIC_SEGMENTATION`, `INSTANCE_SEGMENTATION`, `BBOX_2D`, `BBOX_3D`, `POSE` | 0.02 |
+| Medium | `DEPTH`, `SURFACE_NORMALS` | 0.005 each |
+| Trivial | `SEMANTIC_SEGMENTATION`, `INSTANCE_SEGMENTATION`, `BBOX_2D`, `BBOX_3D` | 0.001 each |
+| Unmeasured | `POSE` | 0.02 (estimate) |
 
 `modality_factor = sum of weights`. Example: RGB + DEPTH + SEMANTIC_SEGMENTATION +
-INSTANCE_SEGMENTATION + BBOX_2D = 1.21.
+INSTANCE_SEGMENTATION + BBOX_2D = 1.008.
 
-Session-3 measurement note: annotation-tier modalities were measured to cost per-scene
-ingestion time rather than per-frame render time (r4 per-frame equaled r1 within noise;
-r4 ingestion +14.72 s) - captured by `annot_ingestion_extra_seconds` in section 3.
+Annotation-tier modalities additionally cost per-scene INGESTION time, not
+per-frame render time (session 3, ADR 0009): `annot_ingestion_extra_seconds`
+(+14.72 s on the measured a10g) is charged once per scene when any
+annotation-tier modality is requested (section 3).
 
 ## 5. Reference hardware profiles
 
@@ -92,41 +100,48 @@ remain **extrapolated** - session-2 values scaled by the measured lit-correction
 ratio 2.3773, not directly measured. `rasterize_factor` retains the conservative
 0.03: the session-3 measurement (0.020) failed the stability criterion (CV 0.57)
 and does not ship. Scene-complexity variance remains excluded by design.
+One known asymmetry: `annot_ingestion_extra_seconds` is measured on a10g and
+defaults to 0.0 on the extrapolated t4/h100 rows, so cross-device comparisons
+under-charge the extrapolated cards by ~half a cent per scene on annotation
+jobs - visible in 6.3, documented rather than invented.
 
 ## 6. Worked examples (verified)
 
+All figures: session-3 measured constants (ADR 0009), regenerated via
+session_kit/sweep_93.py.
+
 ### 6.1 minimal.json on A10G
-1 scene, 1 camera, 1 variation, 1280x720, 64 SPP, RGB, budget $50 -> **$0.01** -> APPROVE.
+1 scene, 1 camera, 1 variation, 1280x720, 64 SPP, RGB, budget $50 -> **$0.013**
+-> APPROVE. (Fixed-overhead-dominated: at one image, the cheap-per-hour T4 is
+actually cost-optimal at $0.007 - tiny jobs invert the ranking.)
 
 ### 6.2 multi_scene.json on A10G
-800 images, 1920x1080, 128 SPP, modality factor 1.21, budget $2500 -> **$0.39** -> APPROVE.
+800 images, 1920x1080, 128 SPP, modality factor 1.008 plus the annot ingestion
+term, budget $2500 -> **$0.96** -> APPROVE.
 
 ### 6.3 Same plan, three devices
-Measured constants narrowed the gap and made the ranking job-shape-dependent: on a
-render-dominated job (the production fixture: $381.41 on H100 vs $391.32 on A10G)
-the fast card's speed edge now wins by ~2.5%, while jobs with a meaningful
-fixed-overhead share (this example) keep the mid-tier ahead. That the answer depends
-on the job is the argument for computing it per job - which is what `--advise` does.
+Measured constants narrowed the gap and made the ranking job-shape-dependent: on
+a render-dominated job (the production fixture: $906.87 on H100 vs $930.27 on
+A10G) the fast card's speed edge wins by ~2.5%, while jobs with a meaningful
+fixed-overhead share (this example) keep the mid-tier ahead by ~2.4%. That the
+answer depends on the job is the argument for computing it per job - which is
+what `--advise` does.
 
 The identical multi_scene plan through the same code path:
 
 | Profile | GPU-hours | Cost |
 |---|---|---|
-| T4 | 0.9468 | **$0.50** |
-| **A10G** | 0.3902 | **$0.39** |
-| H100 | 0.1274 | **$0.42** |
+| T4 | 2.3507 | **$1.24** |
+| **A10G** | 0.9587 | **$0.96** |
+| H100 | 0.3002 | **$0.99** |
 
-The cost-optimal device is the mid-tier A10G, not the cheapest-per-hour (T4) nor the
-fastest (H100) - surfacing that is exactly what the governor is for.
+The cost-optimal device is the mid-tier A10G, not the cheapest-per-hour (T4) nor
+the fastest (H100) - surfacing that is exactly what the governor is for.
 
 ### 6.4 Production batch
-500,000 images, 3840x2160, 256 SPP, A10G -> **$1,897.33** -> over a $1000 budget ->
-BLOCK / MODIFY. Costs reach the range that justifies a governor only at production scale.
-
-> **Section 6 status (temporary):** the dollar figures above are derived from the
-> superseded session-2 constants and are being re-derived from the session-3
-> constants via the 9.3 sweep (ADR 0009). Do not cite them until this notice is
-> removed.
+500,000 images, 3840x2160, 256 SPP, A10G -> **$4,614.37** (4,586.85 GPU-hours)
+-> 4.6x over a $1000 budget -> BLOCK / MODIFY. Costs reach the range that
+justifies a governor only at production scale.
 
 ## 7. Scope and exclusions
 

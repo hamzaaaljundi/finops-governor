@@ -80,12 +80,12 @@ def test_redundant_and_over_budget_uses_both_passes_in_order(governor):
 
 def test_value_trim_can_rescue_an_over_budget_plan_without_cutting_signal(governor):
     # over budget as-planned, but the value-trimmed plan fits: no budget pass needed
-    decision = governor.evaluate(_plan(0.10))
+    decision = governor.evaluate(_plan(0.15))
     assert decision.verdict is Verdict.MODIFY
     mods = " ".join(decision.modifications)
     assert "value:" in mods
     assert "budget:" not in mods
-    assert decision.modified_estimate.total_usd <= 0.10
+    assert decision.modified_estimate.total_usd <= 0.15
 
 
 def test_redundant_and_unrecoverable_still_blocks(governor):
@@ -101,7 +101,9 @@ def test_efficient_plan_still_approves_untouched(governor):
 
 
 def test_undeclared_randomization_is_never_trimmed(governor):
-    decision = governor.evaluate(_plan(50, variation_count=100_000, declared=False))
+    decision = governor.evaluate(_plan(70, variation_count=100_000, declared=False))
+    # budget recalibrated for session-3 measured constants (plan now costs ~$58);
+    # the invariant under test - undeclared randomization is never value-trimmed - is unchanged
     assert decision.verdict is Verdict.APPROVE
     assert "diversity" not in decision.reason
 

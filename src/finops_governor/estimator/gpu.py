@@ -38,6 +38,20 @@ MODALITY_WEIGHTS: dict[OutputModality, float] = {
     OutputModality.POSE: 0.02,  # unmeasured: estimate
 }
 
+# Annotation-tier modalities cost per-scene INGESTION time, not per-frame render time
+# (session-3 measurement, ADR 0009: r4 ingestion +14.72 s vs r1, per-frame identical
+# within noise - annotator/writer initialization, paid once per scene). Charged via
+# HardwareProfile.annot_ingestion_extra_seconds when any of these is requested.
+ANNOTATION_TIER: frozenset[OutputModality] = frozenset(
+    {
+        OutputModality.SEMANTIC_SEGMENTATION,
+        OutputModality.INSTANCE_SEGMENTATION,
+        OutputModality.BBOX_2D,
+        OutputModality.BBOX_3D,
+        OutputModality.POSE,
+    }
+)
+
 
 class GpuRenderCostModel:
     """Estimate GPU render cost for a plan on a given hardware profile."""
@@ -55,11 +69,18 @@ class GpuRenderCostModel:
     def _modality_factor(self, modalities: list[OutputModality]) -> float:
         return sum(MODALITY_WEIGHTS[m] for m in modalities)
 
+    def _fixed_seconds(self, modalities: list[OutputModality]) -> float:
+        fixed = self.profile.fixed_ingestion_seconds
+        if any(m in ANNOTATION_TIER for m in modalities):
+            fixed += self.profile.annot_ingestion_extra_seconds
+        return fixed
+
     def estimate(self, plan: GenerationPlan) -> CostEstimate:
         p = self.profile
         per_image_s = self._base_render_seconds(plan.render_settings) * self._modality_factor(
             plan.modalities
         )
+        fixed_s = self._fixed_seconds(plan.modalities)
 
         per_scene: list[SceneCost] = []
         total_images = 0
@@ -68,7 +89,6 @@ class GpuRenderCostModel:
 
         for scene in plan.scenes:
             images = scene.variation_count * len(scene.cameras)
-            fixed_s = p.fixed_ingestion_seconds
             render_s = images * per_image_s
             scene_total_s = (fixed_s + render_s) * p.contingency_factor
             scene_hours = scene_total_s / SECONDS_PER_HOUR

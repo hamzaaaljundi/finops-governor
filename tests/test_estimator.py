@@ -70,17 +70,10 @@ def test_conforms_to_cost_model_interface():
 
 
 def test_minimal_matches_spec():
-    # docs/cost-model.md §6.1: ~$0.01 on A10G (measured constants, M9 calibration)
+    # docs/cost-model.md §6.1: ~$0.013 on A10G (session-3 constants, ADR 0009)
     est = _model().estimate(_load("minimal.json"))
     assert est.total_images == 1
-    assert est.total_usd == pytest.approx(0.0104, rel=0.02)
-
-
-def test_multi_scene_matches_spec():
-    # docs/cost-model.md §6.2: ~$0.41 on A10G, 800 images (measured constants, M9)
-    est = _model().estimate(_load("multi_scene.json"))
-    assert est.total_images == 800
-    assert est.total_usd == pytest.approx(0.4119, rel=0.01)
+    assert est.total_usd == pytest.approx(0.0126, rel=0.02)
 
 
 def test_per_scene_subtotals_sum_to_total():
@@ -133,3 +126,46 @@ def test_rasterized_cheaper_than_path_traced():
         .total_usd
     )
     assert rz < pt
+
+
+def test_annotation_modalities_charge_ingestion_extra():
+    # ADR 0009: annotation-tier modalities cost per-scene ingestion, not per-frame
+    p = get_profile("a10g")
+    scenes = [_scene("s", 100, 1)]
+    without = _model().estimate(_plan(scenes, [OutputModality.RGB]))
+    with_annot = _model().estimate(
+        _plan(scenes, [OutputModality.RGB, OutputModality.SEMANTIC_SEGMENTATION])
+    )
+    assert with_annot.per_scene[0].fixed_seconds == pytest.approx(
+        p.fixed_ingestion_seconds + p.annot_ingestion_extra_seconds
+    )
+    assert without.per_scene[0].fixed_seconds == pytest.approx(p.fixed_ingestion_seconds)
+    # the fixed delta is exact; the tiny modality-weight delta rides on render_s
+    fixed_delta_usd = (
+        p.annot_ingestion_extra_seconds * p.contingency_factor / 3600 * p.price_per_hour_usd
+    )
+    assert with_annot.total_usd - without.total_usd > fixed_delta_usd * 0.99
+
+
+def test_annot_extra_is_charged_per_scene():
+    p = get_profile("a10g")
+    est = _model().estimate(
+        _plan(
+            [_scene("s1", 10, 1), _scene("s2", 10, 1)],
+            [OutputModality.RGB, OutputModality.BBOX_2D],
+        )
+    )
+    for sc in est.per_scene:
+        assert sc.fixed_seconds == pytest.approx(
+            p.fixed_ingestion_seconds + p.annot_ingestion_extra_seconds
+        )
+
+
+def test_unmeasured_profiles_default_annot_extra_to_zero():
+    for pid in ("t4", "h100"):
+        p = get_profile(pid)
+        assert p.annot_ingestion_extra_seconds == 0.0
+        est = GpuRenderCostModel(p).estimate(
+            _plan([_scene("s", 10, 1)], [OutputModality.RGB, OutputModality.BBOX_2D])
+        )
+        assert est.per_scene[0].fixed_seconds == p.fixed_ingestion_seconds

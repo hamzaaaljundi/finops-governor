@@ -8,10 +8,10 @@ plan without it.
 ![demo](demo/demo.gif)
 
 > _"50000 variations over ~16 declared configurations - expected ~100% redundant; est.
-> **$391.19** of spend adds little training value (effective **$24.46/distinct
-> configuration** vs $0.0039/image nominal); recoverable by trimming to 26 variations."_
+> **$929.97** of spend adds little training value (effective **$58.14/distinct
+> configuration** vs $0.0093/image nominal); recoverable by trimming to 26 variations."_
 >
-> _"proposal: fits budget at **$0.21**"_
+> _"proposal: fits budget at **$0.50**"_
 
 The three checks are one idea: each is a reason **not to spend GPU-hours, catchable
 before you spend**. An LLM proposes plans; a deterministic gate decides - and when a
