@@ -143,10 +143,16 @@ downstream model training; validating rendered output images.
 
 ### Remaining
 
-- **Real-frames demo video (post-M9).** The `demo/` GIF is still the M8 VHS terminal
-  recording; a video showing the M9 adapter's emitted script actually rendering on
-  Isaac Sim, calibrated against the ADR 0009 measured constants, is the natural
-  follow-on and the highest-ROI next move.
+- **Session 4c: real-frames demo video + lit D2/D3 (short GPU session, ~45 min).**
+  Session 4a (2026-07-22) attempted these and instead surfaced a threefold silent
+  adapter regression (light type, camera aim, modify signature) plus an alpha-blind
+  pixel gate that false-passed two all-black renders - full postmortem in ADR 0011,
+  with fixes landed, three new adapter tests pinning the empirically proven forms,
+  an RGB-only Checkpoint 2.5, and a checksum-manifest guard against silent kit
+  regeneration. The deliverables themselves re-run in 4c on the fixed kit: demo
+  frames for the video (D1), the larger-scene calibration point (D2), and a lit
+  rasterize_factor measurement (D3). Session-3's `ref_render_seconds` was briefly
+  challenged by 4a's black-frame measurements and fully rehabilitated same-day.
 - **Cross-job redundancy (post-M10, ADR 0010 decision 6).** Two independent jobs
   whose declared randomization ranges overlap are currently allocated as if
   fully independent; detecting the overlap is a correlation-detection problem this

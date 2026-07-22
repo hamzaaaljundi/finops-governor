@@ -107,3 +107,16 @@ timestamp logging (matching what section 3 already specifies as the intended sou
 or a batched-timing design (time N frames, divide), not per-frame mtime deltas. This
 is now a documented limitation of the measurement method, not an open question about
 the render itself.
+
+## Note (2026-07-22, session 4a): the constant was challenged and rehabilitated
+
+Session 4a briefly appeared to contradict `ref_render_seconds = 3.5897`: two runs on
+the reference scene measured ~1.55 s/frame - suspiciously close to session-2's
+"unlit" 1.51. The resolution (ADR 0011): those runs WERE unlit - a threefold adapter
+regression rendered all-black frames that an alpha-blind pixel gate false-passed. No
+lit measurement was made; 3.5897 stands, and session 3's preserved lit frames remain
+its ground truth. Separately, session 4a measured an unlit raster/pathtraced ratio of
+0.0246 (mean stable across warm-up windows; per-frame deltas properly sub-second on
+that box, unlike this session's 1s mtime floor - the floor is environment-dependent).
+Whether the unlit ratio transfers to the lit regime is unknown; **0.03 stays**, and a
+lit re-measurement belongs to session 4c.
