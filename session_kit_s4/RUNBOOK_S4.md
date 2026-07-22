@@ -69,11 +69,14 @@ docker run --rm --gpus all -e ACCEPT_EULA=Y \
   nvcr.io/nvidia/isaac-sim:4.5.0 /kit/scripts/smoke.py 2>&1 | tee kit/out/smoke.log
 
 python3 -m pip install --user pillow numpy -q
-python3 -c "import glob; from PIL import Image; import numpy as np; a = np.asarray(Image.open(sorted(glob.glob('kit/out/s4_demo/**/rgb_*.png', recursive=True))[0])); print('mean pixel value:', round(float(a.mean()), 2))"
+python3 -c "import glob; from PIL import Image; import numpy as np; a = np.asarray(Image.open(sorted(glob.glob('kit/out/s4_demo/**/rgb_*.png', recursive=True))[0]).convert('RGB')); print('RGB-only mean:', round(float(a.mean()), 2))"
 ```
-Mean > 10 -> proceed. Mean < 2 -> BLACK FRAMES: STOP, diagnose before any further
-spend. Then clear the smoke output so D1's frame count is clean:
-`rm -rf kit/out/s4_demo`
+RGB-only mean > 10 -> proceed. Near 0 -> BLACK FRAMES: STOP, diagnose before any
+further spend. **`.convert('RGB')` is mandatory** (session-4a postmortem: BasicWriter
+emits RGBA; averaging all four channels reports 63.75 for an all-black frame - the
+opaque alpha alone clears the bar - which false-passed two black runs). Also scp one
+frame home and open it with human eyes BEFORE the full render, not after. Then clear
+the smoke output so D1's frame count is clean: `rm -rf kit/out/s4_demo`
 
 ## 5. D1 - demo render (96 frames, ~6-7 min)
 ```bash

@@ -181,6 +181,28 @@ def test_light_modification_uses_the_proven_input_prims_signature():
     assert "rep.modify.attribute(scene_light," not in script
 
 
+def test_light_is_the_proven_dome_form():
+    # Session-4 black-frame postmortem (regression 3 of 3): a Sphere light at
+    # intensity 1500 renders effectively black in Isaac's units and fails SILENTLY
+    # (graph builds, frames written, RGB all zero - only alpha carried the old pixel
+    # gate). The proven form - session 3's preserved frames show RGB means ~185-188 -
+    # is a Dome light at 1000.
+    script = generate_replicator_script(_plan(parameters=[{"name": "lighting", "levels": 4}]))
+    assert "rep.create.light(light_type='Dome', intensity=1000.0)" in script
+    assert "Sphere" not in script
+
+
+def test_cameras_aim_with_look_at_not_euler_rotation():
+    # Session-4 black-frame postmortem (regression 2 of 3): the Euler-rotation
+    # camera form silently framed empty space; session 3's proven scripts aim by
+    # construction with look_at=(0, 0, 0). Also a recorded session-3 lesson:
+    # "use look_at cameras".
+    script = generate_replicator_script(_plan(parameters=[{"name": "lighting", "levels": 4}]))
+    assert "look_at=(0, 0, 0))" in script
+    assert "rep.create.camera(position=" in script
+    assert ", rotation=(" not in script.split("with rep.trigger")[0]  # setup section only
+
+
 def test_no_creates_inside_trigger_body():
     script = generate_replicator_script(
         _plan(

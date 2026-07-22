@@ -95,10 +95,15 @@ def generate_replicator_script(plan: GenerationPlan, output_dir: str = "_output"
     add(f"    assets = rep.create.group([{asset_group}])")
     add("")
     for i, camera in enumerate(scene.cameras):
-        t, r = camera.transform.translation, camera.transform.rotation
+        t = camera.transform.translation
+        # Session-4 postmortem, regression 2 of 3: session 3's proven scripts aim
+        # cameras with look_at=(0, 0, 0) (aim-by-construction at the scene origin,
+        # where assets are placed); the Euler-rotation form silently framed empty
+        # space, contributing to all-black frames that a graph-level check cannot
+        # catch. The plan's declared rotation is intentionally NOT emitted.
         add(
             f"    camera_{i} = rep.create.camera("
-            f"position={tuple(t)}, rotation={tuple(r)})  # {camera.camera_id}"
+            f"position={tuple(t)}, look_at=(0, 0, 0))  # {camera.camera_id}"
         )
     products = ", ".join(
         f"rep.create.render_product(camera_{i}, ({rs.width}, {rs.height}))"
@@ -109,10 +114,13 @@ def generate_replicator_script(plan: GenerationPlan, output_dir: str = "_output"
     # Guaranteed illumination (M9.2 postmortem): every scene gets a default light at
     # setup. The calibration session rendered black frames because lights were only
     # ever emitted inside the frame trigger, where rep.create does not execute.
-    add(
-        "    scene_light = rep.create.light("
-        "light_type='Sphere', position=(0, 4, 0), intensity=1500.0)"
-    )
+    # Session-4 postmortem, regression 3 of 3: the light must be a DOME
+    # (environment) light at intensity 1000 - the exact form in session 3's proven
+    # scripts, whose preserved frames show RGB means ~185-188. The regressed
+    # Sphere-at-1500 form renders effectively black (sphere-light intensities in
+    # Isaac's units need to be orders of magnitude larger), and fails SILENTLY:
+    # the graph builds, frames are written, every pixel is 0.
+    add("    scene_light = rep.create.light(light_type='Dome', intensity=1000.0)")
     add("")
     # Randomization: the declared block through the v1 registry
     randomizer_body = _randomizer_lines(scene)

@@ -20,10 +20,10 @@ with rep.new_layer():
     asset_1 = rep.create.from_usd('/kit/assets/box.usda')  # box
     assets = rep.create.group([asset_0, asset_1])
 
-    camera_0 = rep.create.camera(position=(0.0, 2.0, 6.0), rotation=(-15.0, 0.0, 0.0))  # cam
+    camera_0 = rep.create.camera(position=(0.0, 2.0, 6.0), look_at=(0, 0, 0))  # cam
     render_products = [rep.create.render_product(camera_0, (1920, 1080))]
 
-    scene_light = rep.create.light(light_type='Sphere', position=(0, 4, 0), intensity=1500.0)
+    scene_light = rep.create.light(light_type='Dome', intensity=1000.0)
 
     with rep.trigger.on_frame(num_frames=96):
         rep.modify.pose(input_prims=assets, rotation=rep.distribution.choice([(0, y, 0) for y in [0.0, 30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0]]))  # azimuth
