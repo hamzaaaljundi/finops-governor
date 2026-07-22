@@ -95,7 +95,7 @@ uvicorn finops_governor.service:app
 ```
 
 `POST /evaluate` (one gate pass), `POST /pipeline` (the full run; the response is the
-audit trail), `POST /advise`, `GET /profiles`, `GET /health`. HTTP codes describe the
+audit trail), `POST /advise`, `POST /portfolio` (M10), `GET /profiles`, `GET /health`. HTTP codes describe the
 transaction, never the verdict: a BLOCK is the gate working (200); clients branch on
 `verdict` / `status` in the body. Design: [docs/service-model.md](./docs/service-model.md).
 
@@ -166,7 +166,7 @@ per a pre-registered protocol with raw artifacts committed
 Eight releases, each consuming the previous milestone's guarantees - schema, cost gate,
 multi-axis governor, diversity gate, OpenUSD validity, planner, value-aware
 modification, orchestration, service, the plan-to-Replicator
-adapter, and measured render constants. 325 tests, ruff + mypy strict, CI across Python
+adapter, and measured render constants. 334 tests, ruff + mypy strict, CI across Python
 3.11-3.13. Design specs in [docs/](./docs/), decision records in
 [docs/adr/](./docs/adr/), the full arc in [ROADMAP.md](./ROADMAP.md).
 

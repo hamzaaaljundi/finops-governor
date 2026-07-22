@@ -139,7 +139,7 @@ downstream model training; validating rendered output images.
   already value-trimmed (M6.5/ADR 0007), never at their wasteful raw cost. v1 scope,
   named rather than discovered: single scene per job, no cross-job redundancy
   detection. New CLI mode (`--portfolio a.json b.json --portfolio-budget 500`). Full
-  measurement and the rejected algorithm's numbers: docs/portfolio-model.md. 325 tests.
+  measurement and the rejected algorithm's numbers: docs/portfolio-model.md. 334 tests.
 
 ### Remaining
 

@@ -29,6 +29,7 @@ from finops_governor.gate.decision import GateDecision
 from finops_governor.governor import Governor
 from finops_governor.orchestration import Orchestrator, PipelineState
 from finops_governor.planner import Planner, PlannerModel
+from finops_governor.portfolio import PortfolioResult, allocate_portfolio
 from finops_governor.schemas import GenerationPlan
 
 
@@ -43,12 +44,24 @@ class PipelineRequest(BaseModel):
     geometry: bool = False
 
 
+class PortfolioRequest(BaseModel):
+    """The /portfolio request: N single-scene candidate plans sharing one budget
+    (M10, ADR 0010)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    plans: list[GenerationPlan] = Field(min_length=1)
+    budget_usd: float = Field(gt=0)
+    profile: str = "a10g"
+    geometry: bool = False
+
+
 def create_app(planner_model: PlannerModel | None = None) -> FastAPI:
     app = FastAPI(
         title="FinOps Governor",
         description=(
-            "Pre-flight gate for training-value-per-GPU-dollar in synthetic-data "
-            "pipelines. HTTP codes describe the transaction, never the verdict: "
+            "Deterministic pre-flight gate for synthetic-data GPU spend. "
+            "HTTP codes describe the transaction, never the verdict: "
             "clients branch on `verdict` / `status` in the body."
         ),
         version="1.0.0",
@@ -98,6 +111,33 @@ def create_app(planner_model: PlannerModel | None = None) -> FastAPI:
     def advise_endpoint(plan: GenerationPlan) -> ProfileAdvice:
         """Rank every hardware profile by this plan's cost; recommend the cheapest."""
         return advise(plan)
+
+    @app.post("/portfolio", response_model=PortfolioResult)
+    def portfolio(body: PortfolioRequest) -> PortfolioResult:
+        """Allocate one shared budget across N single-scene jobs (M10, ADR 0010).
+
+        Excluded/underfunded jobs are 200s - the allocation ran and the result is
+        the deliverable, same transaction-vs-verdict rule as every other endpoint.
+        400 is a contract violation the allocator itself names: a multi-scene plan
+        (ADR 0010 decision 7 requires exactly one scene per job in v1).
+        """
+        try:
+            profile = get_profile(body.profile)
+        except KeyError:
+            raise HTTPException(
+                status_code=400, detail=f"unknown hardware profile: {body.profile}"
+            ) from None
+        cost_model = GpuRenderCostModel(profile)
+        governor = _governor(body.profile, body.geometry)
+        try:
+            return allocate_portfolio(
+                body.plans,
+                budget_usd=body.budget_usd,
+                cost_model=cost_model,
+                governor=governor,
+            )
+        except ValueError as exc:  # the ADR 0010 decision-7 single-scene contract
+            raise HTTPException(status_code=400, detail=str(exc)) from None
 
     @app.post("/pipeline", response_model=PipelineState)
     def pipeline(body: PipelineRequest) -> PipelineState:

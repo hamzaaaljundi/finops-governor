@@ -187,3 +187,21 @@ def test_unconstrained_budget_reaches_each_jobs_capacity_saturation(cost_model, 
             expected_distinct(j.requested_variation_count, capacity), abs=1e-3
         )
         assert j.allocated_variation_count == j.requested_variation_count
+
+
+def test_empty_portfolio_returns_zero_allocation(cost_model):
+    """No jobs, no crash - a valid, empty result rather than a special case to guard
+    against at every call site."""
+    result = allocate_portfolio([], budget_usd=100.0, cost_model=cost_model)
+    assert result.total_cost_usd == 0.0
+    assert result.total_expected_distinct == 0.0
+    assert result.jobs == ()
+
+
+def test_zero_budget_funds_nothing(cost_model, production_base):
+    """A zero shared budget should exclude every job cleanly (budget exhausted before
+    anything), not divide by zero or otherwise misbehave."""
+    plan = _make(production_base, "job-A", 100, [("axis0", 4)])
+    result = allocate_portfolio([plan], budget_usd=0.0, cost_model=cost_model)
+    assert result.total_cost_usd == 0.0
+    assert not result.jobs[0].included

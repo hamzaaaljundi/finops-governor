@@ -141,3 +141,44 @@ def test_no_target_no_portfolio_exits_3(capsys):
     code, _, err = _run(capsys)
     assert code == 3
     assert "TARGET is required" in err
+
+
+def test_portfolio_out_writes_round_trippable_json(capsys, tmp_path):
+    import copy
+
+    from finops_governor.portfolio import PortfolioResult
+
+    base = json.loads((FIXTURES / "diversity" / "redundant" / "production_scale.json").read_text())
+    base["budget"]["max_usd"] = 1_000_000
+    d = copy.deepcopy(base)
+    d["plan_id"] = "job-A"
+    plan_path = tmp_path / "job_a.json"
+    plan_path.write_text(json.dumps(d))
+    out_path = tmp_path / "result.json"
+
+    code, out, _ = _run(
+        capsys,
+        "--portfolio",
+        str(plan_path),
+        "--portfolio-budget",
+        "5.0",
+        "--portfolio-out",
+        str(out_path),
+    )
+    assert code == 0
+    assert f"result:    {out_path}" in out
+    # round-trippable: the written JSON validates back into a PortfolioResult
+    result = PortfolioResult.model_validate_json(out_path.read_text())
+    assert result.budget_usd == 5.0
+    assert result.jobs[0].plan_id == "job-A"
+
+
+def test_portfolio_out_requires_portfolio(capsys):
+    code, _, err = _run(
+        capsys,
+        str(FIXTURES / "plans" / "valid" / "minimal.json"),
+        "--portfolio-out",
+        "/tmp/x.json",
+    )
+    assert code == 3
+    assert "--portfolio-out requires --portfolio" in err

@@ -24,6 +24,7 @@ onto v1.0 would be security theater, and pretending otherwise is worse than sayi
 | `POST /evaluate` | a `GenerationPlan` (the M1 contract, verbatim) | `GateDecision` | CLI evaluate mode: ONE gate pass |
 | `POST /pipeline` | `{request, budget_usd, profile?, geometry?}` | `PipelineState` (the full audit trail) | CLI plan mode: the M7 pipeline |
 | `POST /advise` | a `GenerationPlan` | per-profile cost ranking + recommendation | Task 8.2 (the FinOps advisor) |
+| `POST /portfolio` | `{plans: [GenerationPlan, ...], budget_usd, profile?, geometry?}` | `PortfolioResult` (per-job allocation + totals) | M10 (ADR 0010): one shared budget across N single-scene jobs; a multi-scene plan is a 400 (contract violation), an excluded job is a 200 (the allocator working) |
 | `GET /profiles` | - | the hardware profiles (the data behind the cost model) | discoverability |
 | `GET /health` | - | `{"status": "ok"}` | liveness |
 

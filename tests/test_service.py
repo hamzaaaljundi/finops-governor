@@ -160,3 +160,59 @@ def test_pipeline_planner_exhaustion_is_200_failed():
     assert body["status"] == "FAILED"
     assert body["error"] is not None
     assert body["events"][-1]["node"] == "plan"
+
+
+# --- /portfolio: one shared budget across N jobs (M10, ADR 0010) ---
+
+
+def test_portfolio_allocates_and_is_200(client):
+    plan_a = _plan_dict(budget=1_000_000, variation_count=500, levels=[20, 20])
+    plan_a["plan_id"] = "job-A"
+    plan_b = _plan_dict(budget=1_000_000, variation_count=500, levels=[5])
+    plan_b["plan_id"] = "job-B"
+    r = client.post("/portfolio", json={"plans": [plan_a, plan_b], "budget_usd": 0.2})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["budget_usd"] == 0.2
+    assert body["total_cost_usd"] <= 0.2
+    assert {j["plan_id"] for j in body["jobs"]} == {"job-A", "job-B"}
+
+
+def test_portfolio_excluded_job_is_still_200(client):
+    """An excluded (BLOCKED) job is the allocator working, not a transport error -
+    same transaction-vs-verdict rule as every other endpoint."""
+    fundable = _plan_dict(budget=1_000_000, variation_count=10)
+    fundable["plan_id"] = "ok"
+    doomed = _plan_dict(budget=0.000001, variation_count=100_000)  # unrecoverable
+    doomed["plan_id"] = "doomed"
+    r = client.post("/portfolio", json={"plans": [fundable, doomed], "budget_usd": 5.0})
+    assert r.status_code == 200
+    by_id = {j["plan_id"]: j for j in r.json()["jobs"]}
+    assert by_id["ok"]["included"]
+    assert not by_id["doomed"]["included"]
+    assert "BLOCKING" in by_id["doomed"]["reason"]
+
+
+def test_portfolio_multi_scene_job_is_400(client):
+    """A multi-scene plan violates the ADR 0010 decision-7 v1 contract - a request
+    error (400), not a verdict."""
+    plan = _plan_dict(budget=1_000_000)
+    plan["scenes"].append({**plan["scenes"][0], "scene_id": "s2"})
+    r = client.post("/portfolio", json={"plans": [plan], "budget_usd": 5.0})
+    assert r.status_code == 400
+    assert "exactly one scene" in r.json()["detail"]
+
+
+def test_portfolio_unknown_profile_is_400(client):
+    r = client.post(
+        "/portfolio",
+        json={"plans": [_plan_dict()], "budget_usd": 5.0, "profile": "tpu9"},
+    )
+    assert r.status_code == 400
+    assert "unknown hardware profile" in r.json()["detail"]
+
+
+def test_portfolio_empty_plan_list_is_422(client):
+    """Pydantic contract: at least one plan (min_length=1) - a malformed request."""
+    r = client.post("/portfolio", json={"plans": [], "budget_usd": 5.0})
+    assert r.status_code == 422

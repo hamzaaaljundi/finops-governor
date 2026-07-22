@@ -84,6 +84,12 @@ def main(argv: list[str] | None = None, planner_model: PlannerModel | None = Non
         help="--portfolio requires this: the one shared budget being allocated",
     )
     parser.add_argument(
+        "--portfolio-out",
+        default=None,
+        metavar="PATH",
+        help="portfolio mode: also write the full PortfolioResult as JSON to PATH",
+    )
+    parser.add_argument(
         "--budget",
         type=float,
         default=None,
@@ -157,6 +163,10 @@ def main(argv: list[str] | None = None, planner_model: PlannerModel | None = Non
 
     if args.portfolio_budget is not None:
         print("error: --portfolio-budget requires --portfolio", file=sys.stderr)
+        return 3
+
+    if args.portfolio_out is not None:
+        print("error: --portfolio-out requires --portfolio", file=sys.stderr)
         return 3
 
     if args.target is None:
@@ -309,6 +319,9 @@ def _run_portfolio(
     print(
         f"total:     ${result.total_cost_usd:,.2f} spent, {result.total_expected_distinct:,.2f} expected distinct"
     )
+    if args.portfolio_out is not None:
+        Path(args.portfolio_out).write_text(result.model_dump_json(indent=2) + "\n")
+        print(f"result:    {args.portfolio_out}")
     return 0
 
 
