@@ -99,6 +99,24 @@ audit trail), `POST /advise`, `GET /profiles`, `GET /health`. HTTP codes describ
 transaction, never the verdict: a BLOCK is the gate working (200); clients branch on
 `verdict` / `status` in the body. Design: [docs/service-model.md](./docs/service-model.md).
 
+## Portfolio governance (M10)
+
+One shared budget, N candidate jobs (potentially from different teams): which jobs get
+funded, and how much of each, to maximize total expected-distinct-coverage per dollar?
+
+```bash
+finops-governor --portfolio team-a.json team-b.json team-c.json --portfolio-budget 500
+```
+
+The obvious first-instinct algorithm - rank whole jobs by cost-per-distinct and fund
+them fully in that order - was measured against a true optimum before being trusted:
+mean gap **20.1%**, worst case **43.8%**, across 8 synthetic portfolios. What ships
+instead is fractional knapsack over each job's own marginal segments, verified to
+match brute-force optimum to 11 decimal places on a small case. Full measurement,
+rejected alternative, and v1 scope (single scene per job; no cross-job redundancy
+detection - both named, not discovered): [docs/portfolio-model.md](./docs/portfolio-model.md),
+[ADR 0010](./docs/adr/0010-portfolio-governance-scope.md).
+
 ## How it works
 
 ```mermaid
@@ -148,7 +166,7 @@ per a pre-registered protocol with raw artifacts committed
 Eight releases, each consuming the previous milestone's guarantees - schema, cost gate,
 multi-axis governor, diversity gate, OpenUSD validity, planner, value-aware
 modification, orchestration, service, the plan-to-Replicator
-adapter, and measured render constants. 313 tests, ruff + mypy strict, CI across Python
+adapter, and measured render constants. 325 tests, ruff + mypy strict, CI across Python
 3.11-3.13. Design specs in [docs/](./docs/), decision records in
 [docs/adr/](./docs/adr/), the full arc in [ROADMAP.md](./ROADMAP.md).
 

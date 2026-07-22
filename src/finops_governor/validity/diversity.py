@@ -41,6 +41,22 @@ _DEFAULT_PLAUSIBLE_MAX_LEVELS = 64
 _DEFAULT_PLAUSIBLE_CAPACITY_FACTOR = 100.0
 
 
+def capacity_for_scene(scene: Scene) -> int:
+    """Declared distinct-configuration capacity: product of per-parameter `levels`.
+
+    Returns 1 (no distinguishable configurations) for a scene with no declared
+    randomization - the same convention `DiversityCheck` has always used inline; this
+    just gives that one line of math a single home other callers (the M10 portfolio
+    allocator) can reuse instead of re-deriving it.
+    """
+    if scene.randomization is None:
+        return 1
+    capacity = 1
+    for param in scene.randomization.parameters:
+        capacity *= param.levels
+    return capacity
+
+
 def expected_distinct(variations: int, capacity: int) -> float:
     """Expected number of distinct configurations hit by `variations` uniform draws."""
     if capacity <= 0:
@@ -97,9 +113,7 @@ class DiversityCheck:
             if scene.randomization is None:
                 continue  # cannot judge coverage that was never declared
 
-            capacity = 1
-            for param in scene.randomization.parameters:
-                capacity *= param.levels
+            capacity = capacity_for_scene(scene)
 
             variations = scene.variation_count
             findings.extend(self._plausibility_findings(scene, capacity, variations))

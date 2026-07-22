@@ -126,16 +126,31 @@ downstream model training; validating rendered output images.
   automated version of the five-file manual sweep this same session needed to catch
   stale session-2 figures by hand. 313 tests.
 
+- **M10 - Portfolio governance** (ADR 0010). One shared budget, N candidate jobs -
+  allocate to maximize total expected-distinct-coverage per dollar. The obvious first
+  instinct (rank whole jobs by cost-per-distinct at their own declared count, fund
+  fully in that order) was measured against a brute-force/water-filling optimum before
+  being trusted: mean gap **20.1%**, worst case **43.8%**, across 8 synthetic
+  portfolios - a real structural failure (blind to a job's own diminishing-returns
+  curve), not a rounding error. What ships instead: fractional knapsack over each
+  job's marginal segments - the textbook algorithm, applied to segments instead of
+  whole jobs - verified to match brute-force optimum to 11 decimal places on a small
+  case. BLOCKING jobs are excluded before allocation runs; MODIFIABLE jobs enter
+  already value-trimmed (M6.5/ADR 0007), never at their wasteful raw cost. v1 scope,
+  named rather than discovered: single scene per job, no cross-job redundancy
+  detection. New CLI mode (`--portfolio a.json b.json --portfolio-budget 500`). Full
+  measurement and the rejected algorithm's numbers: docs/portfolio-model.md. 325 tests.
+
 ### Remaining
 
 - **Real-frames demo video (post-M9).** The `demo/` GIF is still the M8 VHS terminal
   recording; a video showing the M9 adapter's emitted script actually rendering on
   Isaac Sim, calibrated against the ADR 0009 measured constants, is the natural
   follow-on and the highest-ROI next move.
-- **M10 - Portfolio governance.** Allocating one shared budget across N candidate jobs
-  by expected coverage per dollar - the natural, unclaimed territory once a single job
-  is governed. Cross-job redundancy (overlapping declared randomization across
-  independent jobs) is explicitly out of scope for v1 - see ADR 0010.
+- **Cross-job redundancy (post-M10, ADR 0010 decision 6).** Two independent jobs
+  whose declared randomization ranges overlap are currently allocated as if
+  fully independent; detecting the overlap is a correlation-detection problem this
+  project has not designed yet.
 - Human-in-the-loop approval checkpointing (the ADR 0008 threshold) is **not** planned
   for this repo - see ADR 0008's 2026-07-22 amendment. It is being built as a separate,
   LangGraph-native project where an agent loop is the thesis rather than a graft onto
@@ -157,6 +172,7 @@ downstream model training; validating rendered output images.
 | `v0.7-orchestration` | M7 | End-to-end, multi-axis audit trail |
 | `v1.0` | M8 | **Runnable, installable, served, demonstrated** |
 | `v1.1-calibrated` | M9 | Cost estimates hold against measured Isaac Sim data; the governed plan runs on the real stack |
+| `v1.2-portfolio` | M10 | One shared budget, N jobs - allocated by measured, near-optimal marginal value, not a naive heuristic |
 
 The commit history tells the argument: deterministic spine first, headline innovation
 before the risky milestone, LLM last.

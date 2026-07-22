@@ -15,10 +15,10 @@ isolation.
 This is knapsack-shaped: each job has a cost and an expected-distinct-configurations
 value (already computed by the existing diversity model, unchanged); the allocator
 picks a subset (or partial allocation) maximizing total value under one budget
-constraint. Fractional knapsack has a well-known greedy-by-ratio heuristic; the
-novelty here is entirely the domain application - governed GPU-spend allocation across
-competing teams - not the algorithm, and this ADR names that plainly rather than
-implying an invented method.
+constraint. The obvious first-instinct heuristic - greedy by cost-per-distinct
+evaluated at each job's own declared variation count - was tried and measured before
+being trusted; see Decision 4 for why it was rejected in favor of a different,
+still-simple, still-deterministic algorithm.
 
 The harder, more interesting version of this problem is **cross-job redundancy**: if
 Team A's job and Team B's job both declare overlapping randomization ranges (e.g. two
@@ -45,16 +45,40 @@ ask about.
    portfolio allocator then sees each job's already-waste-corrected cost and expected
    distinct count. Waste removal still costs nothing and happens before any
    budget-level decision, consistent with the existing single-job ordering.
-4. **Allocation strategy: greedy by expected-distinct-per-dollar**, a fractional-
-   knapsack-style heuristic - well-understood, deterministic (this project's
-   thesis-consistent constraint), and simple enough to audit line by line, same as
-   every other decision this gate makes.
-5. **The greedy heuristic's optimality gap is measured, not asserted.** Before this
-   ships as "defensible," it is benchmarked against a brute-force or LP-relaxation
-   baseline on a handful of synthetic portfolios, and the measured gap is reported in
-   the design doc - the same evidence standard this project holds its calibration
-   work to (docs/calibration.md's own "measured, not force-fitted" principle applies
-   here too).
+4. **Allocation strategy: marginal water-filling, not whole-job greedy - measured,
+   not assumed.** The obvious first candidate - rank jobs by cost-per-distinct
+   evaluated at each job's own declared variation count, fund them in that order, trim
+   only the last one to fit - was implemented and benchmarked against a true optimum
+   (brute-force on small cases; verified to agree within ~1%) across 8 synthetic
+   portfolios (4-8 jobs each, randomized capacity/cost/declared-n, budget 15-60% of
+   full-portfolio cost). **Measured mean gap: 20.1% from optimal, worst case 43.8%.**
+   The failure mode is visible on inspection: ranking by the ratio *at a job's
+   endpoint* is blind to that job's own diminishing-returns curve (`expected_distinct`
+   is concave in variation count - coupon-collector saturation), so greedy can dump an
+   entire budget into one job that looks cheapest at its full declared count while
+   funding other jobs at zero, missing their excellent *early* marginal returns. A
+   20-44% gap does not meet this project's "defensible" bar.
+
+   The algorithm that ships instead: **fractional knapsack over per-job marginal
+   segments**, not whole jobs. Each job's concave `expected_distinct` curve is broken
+   into small chunks (e.g. n=0-50, 50-100, ...) with a cost and value delta each;
+   every chunk from every job is pooled into one list, sorted by value-per-dollar
+   descending, and filled greedily until the budget runs out - ordinary fractional
+   knapsack, just applied to marginal segments instead of whole jobs. This is
+   mathematically equivalent to marginal-value equalization (both satisfy the same
+   optimality condition for separable concave allocation; sorting all segments by
+   ratio and bisecting on a shadow price find the same solution), but simpler to
+   implement, explain, and audit: no shadow-price search, just build segments, sort,
+   fill. Verified against the brute-force baseline: **25.42980505... vs. true optimum
+   25.42980505...**, matching to the 11th decimal on the tiny case, and within ~0.02%
+   of a separate 60-iteration bisection cross-check on all 8 synthetic portfolios (see
+   docs/portfolio-model.md for the full table).
+5. **Every algorithm choice in this ADR is backed by a measured number, not an
+   assumption - including the one that got rejected.** The whole-job-greedy gap above
+   is reported precisely because a wrong first instinct, measured and corrected before
+   shipping, is more defensible than an unmeasured "obviously fine" heuristic would
+   have been. This is the same evidence standard docs/calibration.md holds GPU-cost
+   constants to, applied to an algorithm instead of a hardware measurement.
 6. **Cross-job redundancy is explicitly out of scope for v1**, named here rather than
    discovered by a reviewer. Detecting it correctly requires comparing declared
    parameter spaces across jobs that may use entirely different scene definitions,
@@ -62,6 +86,15 @@ ask about.
    anything this gate currently does, and one where a wrong answer (false-positive
    "these overlap" or false-negative "these don't") is worse than the current honest
    silence. It is named as the natural v2 extension, not silently deferred.
+7. **Each candidate job must declare exactly one scene for v1.** The per-job
+   marginal-segment curve (decision 4) needs a single scalar "how much of this job did
+   we fund" - a multi-scene job would need a vector allocation *within* the job before
+   it could even enter the *portfolio's* allocation, a nested version of this same
+   problem this ADR has not designed. A multi-scene candidate is rejected with a clear
+   error rather than silently handled by some inconsistent default (e.g. only trimming
+   the first scene). Named here, surfaced while designing the implementation rather
+   than after shipping it - the same "found while building, written down before it
+   ships" discipline as decision 4's rejected-algorithm measurement.
 
 ## Consequences
 
@@ -69,12 +102,14 @@ ask about.
   wholesale, the existing single-job diversity/cost models - no parallel coverage
   model to maintain.
 - The project can honestly say what it does ("allocates a shared budget across
-  independent jobs by expected coverage per dollar, with a measured heuristic gap")
-  and what it does not ("does not detect redundant coverage across different teams'
-  jobs") in the same sentence, before anyone asks.
+  independent jobs by marginal expected coverage per dollar, via fractional knapsack
+  over per-job segments, matching brute-force optimum to 11 decimal places on a
+  verified small case") and what it does not ("does not detect redundant coverage
+  across different teams' jobs") in the same sentence, before anyone asks.
 - A future v2 that models cross-job redundancy has a clean entry point: this ADR is
   where that gap was named, not a retrofit.
-- If the measured greedy gap (decision 5) turns out to be large on adversarial
-  portfolios, that finding ships too - "the heuristic has a documented weakness at
-  extreme value skew" is a stronger result than silence, consistent with this
-  project's calibration protocol's clause 4: whatever the numbers are, they ship.
+- The rejected whole-job-greedy measurement ships in the docs alongside the accepted
+  algorithm - "here's the naive approach, here's its measured 20-44% gap, here's why
+  the shipped algorithm doesn't have that problem" is a stronger artifact than only
+  showing the final answer, consistent with this project's calibration protocol's
+  clause 4: whatever the numbers are, they ship.

@@ -72,3 +72,72 @@ def test_unknown_profile_exits_3(capsys):
     )
     assert code == 3
     assert "unknown hardware profile" in err
+
+
+# ---------------------------------------------------------------------- #
+# Portfolio mode (M10, ADR 0010)
+# ---------------------------------------------------------------------- #
+
+
+def test_portfolio_mode_allocates_across_jobs(capsys, tmp_path):
+    import copy
+
+    base = json.loads((FIXTURES / "diversity" / "redundant" / "production_scale.json").read_text())
+    base["budget"]["max_usd"] = 1_000_000
+
+    def write(name: str, variations: int, levels: list[tuple[str, int]]) -> str:
+        d = copy.deepcopy(base)
+        d["plan_id"] = name
+        d["scenes"][0]["variation_count"] = variations
+        d["scenes"][0]["randomization"]["parameters"] = [
+            {"name": n, "levels": lv} for n, lv in levels
+        ]
+        path = tmp_path / f"{name}.json"
+        path.write_text(json.dumps(d))
+        return str(path)
+
+    job_a = write("job-A", 20000, [("axis0", 50), ("axis1", 50)])
+    job_b = write("job-B", 20000, [("axis0", 200)])
+
+    code, out, _ = _run(capsys, "--portfolio", job_a, job_b, "--portfolio-budget", "5.0")
+    assert code == 0
+    assert "portfolio: 2 jobs" in out
+    assert "budget:    $5.00" in out
+    assert "total:" in out
+
+
+def test_portfolio_requires_portfolio_budget(capsys):
+    code, _, err = _run(capsys, "--portfolio", str(FIXTURES / "plans" / "valid" / "minimal.json"))
+    assert code == 3
+    assert "--portfolio-budget" in err
+
+
+def test_portfolio_and_target_conflict(capsys):
+    code, _, err = _run(
+        capsys,
+        str(FIXTURES / "plans" / "valid" / "minimal.json"),
+        "--portfolio",
+        str(FIXTURES / "plans" / "valid" / "minimal.json"),
+        "--portfolio-budget",
+        "5.0",
+    )
+    assert code == 3
+    assert "drop TARGET" in err
+
+
+def test_portfolio_rejects_multi_scene_job(capsys):
+    code, _, err = _run(
+        capsys,
+        "--portfolio",
+        str(FIXTURES / "plans" / "valid" / "multi_scene.json"),
+        "--portfolio-budget",
+        "5.0",
+    )
+    assert code == 3
+    assert "exactly one scene" in err
+
+
+def test_no_target_no_portfolio_exits_3(capsys):
+    code, _, err = _run(capsys)
+    assert code == 3
+    assert "TARGET is required" in err

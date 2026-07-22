@@ -1,8 +1,10 @@
-"""Command-line entry point (CLI at M5, plan mode at M6, full pipeline at M7).
+"""Command-line entry point (CLI at M5, plan mode at M6, full pipeline at M7,
+portfolio mode at M10).
 
-Two modes, selected by --budget:
+Three modes:
 
-  Evaluate a plan file (no --budget) - ONE gate pass, the gate's own interface:
+  Evaluate a plan file (no --budget, no --portfolio) - ONE gate pass, the gate's own
+  interface:
       python -m finops_governor plan.json [--profile h100] [--geometry]
       exit: 0 = APPROVE, 1 = MODIFY (proposal printed), 2 = BLOCK, 3 = invalid input
 
@@ -12,6 +14,11 @@ Two modes, selected by --budget:
       exit: 0 = EXECUTED, 2 = BLOCKED, 3 = FAILED or invalid input
       (there is no exit 1 in plan mode: MODIFY is adopted automatically - the gate's
       proposal becomes the plan, deterministically, per ADR 0007/0008)
+
+  Portfolio - one shared budget across N single-scene plans (M10, ADR 0010):
+      python -m finops_governor --portfolio a.json b.json c.json --portfolio-budget 50
+      exit: 0 = allocation computed (some jobs may still be excluded or underfunded),
+      3 = invalid input (a multi-scene plan, a missing file, missing --portfolio-budget)
 
 --save writes the FINAL plan (as it would run, post-adoption); --audit writes the full
 terminal PipelineState - the dollars-saved receipt.
@@ -44,14 +51,37 @@ def main(argv: list[str] | None = None, planner_model: PlannerModel | None = Non
     parser = argparse.ArgumentParser(
         prog="finops-governor",
         description=(
-            "Pre-flight gate for training-value-per-GPU-dollar: evaluates a "
+            "Deterministic pre-flight gate for synthetic-data GPU spend: evaluates a "
             "GenerationPlan (or runs the full plan->gate->execute pipeline from "
-            "natural language with --budget) before any GPU spend."
+            "natural language with --budget) before any GPU spend, or allocates one "
+            "shared budget across many jobs with --portfolio."
         ),
     )
     parser.add_argument(
         "target",
-        help=("path to a GenerationPlan JSON file; or, with --budget, a natural-language request"),
+        nargs="?",
+        default=None,
+        help=(
+            "path to a GenerationPlan JSON file; or, with --budget, a natural-language "
+            "request. Omit when using --portfolio."
+        ),
+    )
+    parser.add_argument(
+        "--portfolio",
+        nargs="+",
+        default=None,
+        metavar="PLAN",
+        help=(
+            "M10: allocate one shared budget (--portfolio-budget) across multiple "
+            "GenerationPlan JSON files, each declaring exactly one scene (ADR 0010)"
+        ),
+    )
+    parser.add_argument(
+        "--portfolio-budget",
+        type=float,
+        default=None,
+        metavar="USD",
+        help="--portfolio requires this: the one shared budget being allocated",
     )
     parser.add_argument(
         "--budget",
@@ -112,6 +142,29 @@ def main(argv: list[str] | None = None, planner_model: PlannerModel | None = Non
         if args.geometry
         else Governor.with_default_checks(cost_model)
     )
+
+    if args.portfolio is not None:
+        if args.portfolio_budget is None:
+            print("error: --portfolio requires --portfolio-budget", file=sys.stderr)
+            return 3
+        if args.target is not None:
+            print(
+                "error: --portfolio takes its plans as its own argument; drop TARGET",
+                file=sys.stderr,
+            )
+            return 3
+        return _run_portfolio(args, profile, cost_model, governor)
+
+    if args.portfolio_budget is not None:
+        print("error: --portfolio-budget requires --portfolio", file=sys.stderr)
+        return 3
+
+    if args.target is None:
+        print(
+            "error: TARGET is required (a plan file, a request with --budget, or use --portfolio)",
+            file=sys.stderr,
+        )
+        return 3
 
     if args.budget is not None:
         if args.emit_replicator is not None:
@@ -213,6 +266,50 @@ def _savings(final: PipelineState) -> float:
     if first_gate.estimated_usd is None:
         return 0.0  # pragma: no cover
     return first_gate.estimated_usd - final.decision.estimate.total_usd
+
+
+# ---------------------------------------------------------------------- #
+# Portfolio mode: one shared budget across N jobs (M10, ADR 0010)
+# ---------------------------------------------------------------------- #
+
+
+def _run_portfolio(
+    args: argparse.Namespace,
+    profile: HardwareProfile,
+    cost_model: GpuRenderCostModel,
+    governor: Governor,
+) -> int:
+    from finops_governor.portfolio import allocate_portfolio
+
+    plans = []
+    for path_str in args.portfolio:
+        plan = _load_plan_file(path_str)
+        if plan is None:
+            return 3
+        plans.append(plan)
+
+    try:
+        result = allocate_portfolio(
+            plans, budget_usd=args.portfolio_budget, cost_model=cost_model, governor=governor
+        )
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 3
+
+    print(f"portfolio: {len(plans)} jobs, {profile.name}")
+    print(f"budget:    ${result.budget_usd:,.2f}")
+    for job in result.jobs:
+        marker = "included" if job.included else "excluded"
+        print(
+            f"  {job.plan_id:20s} {marker:9s} "
+            f"n={job.allocated_variation_count}/{job.requested_variation_count:<8} "
+            f"${job.allocated_cost_usd:<10,.4f} "
+            f"distinct={job.expected_distinct:<10,.2f} {job.reason}"
+        )
+    print(
+        f"total:     ${result.total_cost_usd:,.2f} spent, {result.total_expected_distinct:,.2f} expected distinct"
+    )
+    return 0
 
 
 # ---------------------------------------------------------------------- #
