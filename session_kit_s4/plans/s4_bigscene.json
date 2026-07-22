@@ -1,0 +1,111 @@
+{
+  "plan_id": "s4-bigscene",
+  "scenes": [
+    {
+      "scene_id": "s4-bigscene",
+      "environment": {
+        "asset_id": "floor",
+        "usd_path": "/kit/assets/floor.usda"
+      },
+      "assets": [
+        {
+          "asset_id": "arm-0",
+          "usd_path": "/kit/assets/arm.usda"
+        },
+        {
+          "asset_id": "box-0",
+          "usd_path": "/kit/assets/box.usda"
+        },
+        {
+          "asset_id": "arm-1",
+          "usd_path": "/kit/assets/arm.usda"
+        },
+        {
+          "asset_id": "box-1",
+          "usd_path": "/kit/assets/box.usda"
+        },
+        {
+          "asset_id": "arm-2",
+          "usd_path": "/kit/assets/arm.usda"
+        },
+        {
+          "asset_id": "box-2",
+          "usd_path": "/kit/assets/box.usda"
+        },
+        {
+          "asset_id": "arm-3",
+          "usd_path": "/kit/assets/arm.usda"
+        },
+        {
+          "asset_id": "box-3",
+          "usd_path": "/kit/assets/box.usda"
+        },
+        {
+          "asset_id": "arm-4",
+          "usd_path": "/kit/assets/arm.usda"
+        },
+        {
+          "asset_id": "box-4",
+          "usd_path": "/kit/assets/box.usda"
+        },
+        {
+          "asset_id": "arm-5",
+          "usd_path": "/kit/assets/arm.usda"
+        },
+        {
+          "asset_id": "box-5",
+          "usd_path": "/kit/assets/box.usda"
+        }
+      ],
+      "cameras": [
+        {
+          "camera_id": "cam",
+          "transform": {
+            "translation": [
+              0.0,
+              3.0,
+              9.0
+            ],
+            "rotation": [
+              -18.0,
+              0.0,
+              0.0
+            ]
+          }
+        }
+      ],
+      "variation_count": 150,
+      "randomization": {
+        "parameters": [
+          {
+            "name": "azimuth",
+            "levels": 12
+          },
+          {
+            "name": "position",
+            "levels": 8,
+            "min_value": -3,
+            "max_value": 3
+          },
+          {
+            "name": "lighting",
+            "levels": 5,
+            "min_value": 500,
+            "max_value": 2500
+          }
+        ]
+      }
+    }
+  ],
+  "modalities": [
+    "RGB"
+  ],
+  "render_settings": {
+    "width": 1920,
+    "height": 1080,
+    "samples_per_pixel": 128
+  },
+  "budget": {
+    "max_usd": 100
+  }
+}

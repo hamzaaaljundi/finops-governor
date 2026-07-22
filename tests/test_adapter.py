@@ -169,6 +169,18 @@ def test_every_script_has_setup_light_before_trigger():
     assert light_at < trigger_at
 
 
+def test_light_modification_uses_the_proven_input_prims_signature():
+    # Session-4 smoke postmortem: rep.modify.attribute(scene_light, 'intensity', ...)
+    # (object-first) fails Replicator 1.11.35 graph build with "Invalid AttributeObj
+    # in connectAttr" and renders NOTHING; the form that actually rendered session
+    # 3's 600-frame coverage run is name-first with input_prims=. String tests can't
+    # prove Isaac validity, but they CAN pin the empirically proven form.
+    script = generate_replicator_script(_plan(parameters=[{"name": "lighting", "levels": 4}]))
+    assert "rep.modify.attribute('intensity', " in script
+    assert "input_prims=scene_light)" in script
+    assert "rep.modify.attribute(scene_light," not in script
+
+
 def test_no_creates_inside_trigger_body():
     script = generate_replicator_script(
         _plan(

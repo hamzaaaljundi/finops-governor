@@ -204,9 +204,14 @@ def _randomizer_lines(scene: Scene) -> list[str]:
         elif kind == "light":
             # M9.2 postmortem: rep.create inside a trigger does not execute; the
             # light exists at setup (scene_light) and its intensity is MODIFIED here.
+            # Session-4 smoke postmortem: the signature must be name-first with
+            # input_prims= (the form that rendered session 3's 600-frame coverage
+            # run); the object-first form fails Replicator 1.11.35 graph build with
+            # "Invalid AttributeObj in connectAttr" and renders nothing.
             out.append(
-                f"rep.modify.attribute(scene_light, 'intensity', "
-                f"rep.distribution.choice({_choices(param, 300.0, 3000.0)}))"
+                f"rep.modify.attribute('intensity', "
+                f"rep.distribution.choice({_choices(param, 300.0, 3000.0)}), "
+                f"input_prims=scene_light)"
                 f"  # {param.name}"
             )
         elif kind == "color":
