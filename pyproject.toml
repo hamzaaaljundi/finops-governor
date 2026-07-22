@@ -59,7 +59,7 @@ packages = ["src/finops_governor"]
 
 [tool.ruff]
 line-length = 100
-extend-exclude = ["session_kit/scripts"]
+extend-exclude = ["session_kit/scripts", "session_kit_s4/scripts"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
