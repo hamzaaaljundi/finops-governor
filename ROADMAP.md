@@ -1,4 +1,4 @@
-# Roadmap - FinOps Governor for Physical AI Synthetic Data Pipelines
+# Roadmap - FinOps Governor for Synthetic Data Pipelines
 
 > A pre-flight gate for **training-value-per-GPU-dollar**. An LLM plans the job; a
 > deterministic, multi-axis gate decides whether it is worth running - refusing jobs that
@@ -107,16 +107,39 @@ downstream model training; validating rendered output images.
   parameters only; partial arcs (e.g. a declared 0-180 sweep) correctly keep both
   endpoints. 311 tests.
 
+- **M9.5 - Pitch integrity.** The project name and framing claimed more than the code
+  delivered: "training-value-per-GPU-dollar" implied a validated link between declared-
+  parameter redundancy and downstream model quality that does not exist anywhere in
+  this repo. Renamed to **FinOps Governor for Physical AI Synthetic Data Pipelines**;
+  README's opening now states plainly what the diversity axis measures (declared-
+  parameter redundancy, a real pre-execution proxy) and what it does not claim
+  (validated training value - see docs/diversity-model.md section 5, which already
+  said this honestly before the pitch caught up to it). ADR 0008 amended: HITL
+  checkpointing is not planned for this repo - it's a genuine agent-loop use case,
+  and building it here would mean adding the exact pattern this ADR's Context argued
+  against; it is instead a separate, LangGraph-native project. ADR 0010 pre-registers
+  M10's scope before a line of its code is written - cross-job redundancy is
+  explicitly out of scope for v1, named here rather than discovered by a reviewer.
+  Added a docs-vs-code drift test (`tests/test_docs_dollar_figures.py`): runs the CLI
+  against the same pinned fixtures the docs quote and fails CI if a dollar figure the
+  code computes today doesn't appear in the living docs that describe it - the
+  automated version of the five-file manual sweep this same session needed to catch
+  stale session-2 figures by hand. 313 tests.
+
 ### Remaining
 
 - **Real-frames demo video (post-M9).** The `demo/` GIF is still the M8 VHS terminal
   recording; a video showing the M9 adapter's emitted script actually rendering on
   Isaac Sim, calibrated against the ADR 0009 measured constants, is the natural
   follow-on and the highest-ROI next move.
-- Candidate extensions beyond that, in docs and ADRs: a human-in-the-loop approval
-  checkpoint (the ADR 0008 threshold, LangGraph's home ground) and portfolio
-  governance (allocating one shared budget across N candidate jobs by expected
-  coverage per dollar - the natural, unclaimed territory once a single job is governed).
+- **M10 - Portfolio governance.** Allocating one shared budget across N candidate jobs
+  by expected coverage per dollar - the natural, unclaimed territory once a single job
+  is governed. Cross-job redundancy (overlapping declared randomization across
+  independent jobs) is explicitly out of scope for v1 - see ADR 0010.
+- Human-in-the-loop approval checkpointing (the ADR 0008 threshold) is **not** planned
+  for this repo - see ADR 0008's 2026-07-22 amendment. It is being built as a separate,
+  LangGraph-native project where an agent loop is the thesis rather than a graft onto
+  this one.
 
 ---
 

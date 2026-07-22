@@ -1,9 +1,17 @@
-# FinOps Governor for Synthetic Data Pipelines
+# FinOps Governor for Physical AI Synthetic Data Pipelines
 
-**A pre-flight gate for training-value-per-GPU-dollar.** Before a single frame renders,
-it refuses synthetic-data jobs that are **over budget**, **geometrically invalid**, or
-**predictably low training-value** - prices the waste in dollars, and hands back the
-plan without it.
+**A deterministic pre-flight gate for synthetic-data GPU spend.** Before a single frame
+renders, it refuses jobs that are **over budget**, **geometrically invalid**, or
+**predictably redundant against their own declared randomization** - prices the waste in
+dollars, and hands back the plan without it.
+
+The diversity axis measures **declared-parameter redundancy** (how much of a job's
+declared randomization space gets resampled given its variation count) - a real,
+computable proxy for wasted spend, and a defensible pre-execution signal. It is **not**
+a validated measure of downstream training value: no claim is made here, or anywhere in
+this repo, that low redundancy in declared parameter space causes a better-trained
+policy. That link is real research, out of scope for this project, and named honestly
+as a limitation in [docs/diversity-model.md](./docs/diversity-model.md) section 5.
 
 ![demo](demo/demo.gif)
 
@@ -140,7 +148,7 @@ per a pre-registered protocol with raw artifacts committed
 Eight releases, each consuming the previous milestone's guarantees - schema, cost gate,
 multi-axis governor, diversity gate, OpenUSD validity, planner, value-aware
 modification, orchestration, service, the plan-to-Replicator
-adapter, and measured render constants. 311 tests, ruff + mypy strict, CI across Python
+adapter, and measured render constants. 313 tests, ruff + mypy strict, CI across Python
 3.11-3.13. Design specs in [docs/](./docs/), decision records in
 [docs/adr/](./docs/adr/), the full arc in [ROADMAP.md](./ROADMAP.md).
 

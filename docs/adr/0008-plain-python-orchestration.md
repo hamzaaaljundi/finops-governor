@@ -1,6 +1,11 @@
 # ADR 0008 - Plain-Python orchestration; LangGraph evaluated and deferred with a named threshold
 
-**Status:** Accepted
+**Status:** Accepted; amended 2026-07-22 - the named threshold (a spend-approval
+checkpoint) is being pursued as a **separate project** (a LangGraph-based agentic
+workflow tool), not as a future milestone of this repo. This repo's thesis is a
+deterministic gate that an LLM's proposals pass through, never an agent loop; adding
+LangGraph here to backfill a HITL checkpoint would contradict the reasoning below, not
+fulfill it. See the amendment at the end of this document.
 
 ## Context
 
@@ -58,3 +63,19 @@ No logic rewrites - a one-day exercise, by construction rather than by hope.
   and both decisions name the conditions under which the answer flips.
 - If HITL checkpointing is pursued post-M8 (a candidate extension), this ADR is the
   design's entry point rather than a reversal.
+
+## Amendment (2026-07-22): the named threshold is being exercised elsewhere
+
+The prediction above held - port is one day, node/route/state map directly - but the
+decision on *where* to build it changed. HITL checkpointing is a genuine LangGraph use
+case, but it is an agentic loop by definition (propose, pause, wait for a human, resume),
+and this project's core thesis is the opposite: an LLM proposes, a deterministic gate
+decides, no agent loop governs itself. Building HITL inside finops-governor would mean
+adding the exact pattern this ADR spent its Context section arguing against, to close
+out a footnote - a worse trade than building it properly in a project whose thesis
+*is* the agentic loop, where LangGraph is the natural tool rather than a graft.
+
+This ADR's threshold and structural guarantee remain correct and reusable; a future
+maintainer porting *this* orchestrator to LangGraph (for streaming or long-running jobs,
+the two conditions named above) still finds this document accurate. HITL checkpointing
+itself is simply no longer this repo's deliverable.
