@@ -1,0 +1,57 @@
+#usda 1.0
+(
+    defaultPrim = "box"
+    upAxis = "Y"
+    metersPerUnit = 1
+)
+
+def Xform "box"
+{
+    def Scope "Materials"
+    {
+        def Material "BlueGloss"
+        {
+            token outputs:surface.connect = </box/Materials/BlueGloss/Shader.outputs:surface>
+            def Shader "Shader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.1, 0.32, 0.72)
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.2
+                token outputs:surface
+            }
+        }
+        def Material "YellowMark"
+        {
+            token outputs:surface.connect = </box/Materials/YellowMark/Shader.outputs:surface>
+            def Shader "Shader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.92, 0.78, 0.1)
+                float inputs:metallic = 0.0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
+        }
+    }
+
+    def Cube "body" (prepend apiSchemas = ["MaterialBindingAPI"])
+    {
+        double size = 1.0
+        rel material:binding = </box/Materials/BlueGloss>
+        double3 xformOp:translate = (1.15, 0.225, 0.85)
+        float3 xformOp:rotateXYZ = (0, 25, 0)
+        float3 xformOp:scale = (0.45, 0.45, 0.45)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Cube "lid_stripe" (prepend apiSchemas = ["MaterialBindingAPI"])
+    {
+        double size = 1.0
+        rel material:binding = </box/Materials/YellowMark>
+        double3 xformOp:translate = (1.15, 0.465, 0.85)
+        float3 xformOp:rotateXYZ = (0, 25, 0)
+        float3 xformOp:scale = (0.47, 0.04, 0.15)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+}
