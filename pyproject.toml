@@ -8,8 +8,8 @@ version = "1.0.0"
 description = "Pre-flight gate for training-value-per-GPU-dollar in synthetic-data pipelines: an LLM plans, a deterministic multi-axis gate decides - budget, expected-coverage diversity, and USD geometric validity - before any GPU spend."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
-authors = [{ name = "Hamza AlJundi" }]
+license = { text = "Apache-2.0" }
+authors = [{ name = "Hamza Al Jundi" }]
 keywords = [
     "finops",
     "synthetic-data",
@@ -22,7 +22,7 @@ keywords = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
