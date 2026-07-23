@@ -142,3 +142,73 @@ by this measurement; empirically validating it end-to-end requires ground-truth
 parameter logging per frame (a Replicator writer extension), not appearance
 clustering on a minimal gray scene. Documented per protocol clause 2: a known
 instrument limit, not force-fitted.
+
+## 8. Session-4 validation (2026-07-22): lit re-measurements on the fixed adapter
+
+Session 4 ran as three rentals (4a, 4c, 4d; ~$8-10 total against a $15+$10 cap).
+4a produced no lit frames - a threefold silent adapter regression plus an
+alpha-blind pixel gate, fully documented in ADR 0011 - and 4c/4d re-ran the
+deliverables on the triple-fixed kit with an RGB-only gate. All 4c/4d frames were
+verified lit (RGB-only means 161-214) and human-inspected before any number below
+was accepted.
+
+### 8.1 D2 - larger-scene point: the 2x corridor passed at 1.6%
+
+A 12-asset scene (6x the reference's asset count) with an additional per-frame
+scatter parameter, same resolution/spp as the reference (1920x1080 @ 128):
+
+    measured 3.5329 s/frame (150 frames, warmup 20, CV 0.052)
+    predicted 3.5897 (ref_render_seconds, scene-complexity-independent by design)
+    deviation: 1.6% - not merely inside the pre-registered 2x corridor
+    [1.79, 7.18]; nearly on the prediction.
+
+Conclusion: at this scene class, resolution x samples dominates per-frame cost
+and asset count is not a first-order driver - the cost model's deliberate
+exclusion of scene complexity (section 6's known limit) is empirically
+supported, not merely asserted. The run's ingestion_s (862) is cold-shader-
+compile-inclusive and is NOT comparable to the calibrated ingestion constant;
+recorded here to prevent future misreading.
+
+### 8.2 D3 - rasterize_factor: triple-corroborated at ~0.02; 0.03 stands
+
+300 rtx_realtime frames on the reference scene, lit (RGB mean 161.87):
+
+    mean 0.0715 s/frame (warmup 100; warmup 150 cross-check: 0.0383 -> n/a, see
+    note), CV 0.699 - honestly FAILS the <0.20 bar, consistent with session-3's
+    r5 (0.57): raster-speed per-frame timing is inherently jittery.
+    rasterize_factor = 0.0715 / 3.5329 (same-day lit reference) = 0.0202
+                     = 0.0715 / 3.5897 (calibrated constant)     = 0.0199
+    Session-3 r5's own estimate: ~0.020. Three independent measurements agree.
+
+`rasterize_factor` stays **0.03** - fail-safe upward rounding of a now
+measurement-backed ~0.02 (over-estimating raster cost can only make the gate
+conservative). Two instrument notes: (a) this box's filesystem resolved
+sub-second mtimes (54 distinct deltas; the session-3 1-second quantization floor
+is environment-dependent, not universal); (b) min delta was NEGATIVE (-0.092s) -
+BasicWriter writes frames asynchronously and occasionally out of frame order at
+raster speeds, inflating CV beyond true render variance; the mean is unbiased,
+the CV is an upper bound. The in-app watcher instrumentation (ADR 0009
+amendment's proposal) hung app startup in 4a and was retired - unnecessary on
+this stack anyway given (a).
+
+### 8.3 D1 - demo frames (not a calibration input)
+
+96 lit frames rendered from the gate's own value-trimmed proposal
+(120 -> 96, ADR 0007 pipeline on camera), assembled with the terminal-verdict
+recording into demo/s4_governed_render.mp4. Session 4d re-rendered the same plan
+with stylized PBR demo assets (session_kit_s4/assets_demo/ - a separate set;
+the gray calibration assets in assets/ are untouched and remain the only assets
+any constant derives from). NVIDIA's cloud-hosted Franka was successfully
+fetched and rendered in-container (the fetch mechanism is validated) but at a
+~20x unit-scale mismatch to the hand-authored scene; real-vendor-asset
+integration is deferred as future polish, not attempted blind.
+
+### 8.4 Runbook lessons folded in (cumulative)
+
+RGB-only pixel gates (.convert('RGB') - alpha carried a 63.75 false-pass);
+frames arrive vertically flipped from BasicWriter (ffmpeg -vf vflip at assembly;
+cosmetic); per-run ~14-min cold shader compile is avoidable with a persistent
+cache mount (-v .../shadercache:/root/.cache/ov) - documented as an optimization
+deliberately NOT used this arc to keep run conditions consistent with sessions
+1-3; local-only artifacts (assets, recordings) are copied, never zipped -
+kit-replacement wholesale deleted the verdicts recording once.

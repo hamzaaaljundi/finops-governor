@@ -120,3 +120,10 @@ its ground truth. Separately, session 4a measured an unlit raster/pathtraced rat
 that box, unlike this session's 1s mtime floor - the floor is environment-dependent).
 Whether the unlit ratio transfers to the lit regime is unknown; **0.03 stays**, and a
 lit re-measurement belongs to session 4c.
+
+**Session-4c update (same day):** the lit re-measurement happened - lit raster
+0.0715 s/frame against a same-day lit reference of 3.5329 gives 0.0202 (0.0199
+against this ADR's 3.5897). With session-3 r5's ~0.020, the factor is now
+triple-corroborated at ~0.02; 0.03 is retained as fail-safe rounding. The
+follow-up this amendment opened is closed with data. Details:
+docs/calibration.md section 8.2.

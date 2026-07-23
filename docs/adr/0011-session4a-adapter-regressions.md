@@ -90,3 +90,19 @@ that only contact with real Isaac Sim could reveal.
   "frozen" artifact is only as trustworthy as the mechanism preventing its silent
   regeneration.** The dollar-figure drift test (M9.5) guards prose; the manifest
   (decision 3) guards artifacts; real-render smoke gates guard the adapter.
+
+## Closeout (2026-07-22, same day): sessions 4c/4d delivered everything
+
+The triple-fixed kit ran clean on the first attempt. D1: 96 lit frames (RGB
+means 189/214/187 - the lighting randomization visibly expressing), assembled
+with the re-recorded verdict clip into demo/s4_governed_render.mp4; a 4d
+re-render swapped in stylized PBR demo assets (separate assets_demo/ set;
+calibration assets untouched), and NVIDIA's cloud Franka fetch was validated
+in-container (scale integration deferred). D2: the 2x corridor passed at 1.6%
+(3.5329 measured vs 3.5897 predicted on a 6x-asset scene) - the
+scene-complexity-exclusion design vindicated by measurement. D3:
+rasterize_factor triple-corroborated at ~0.02 (0.0202 same-day, 0.0199 vs the
+constant, ~0.020 session-3 r5); 0.03 retained fail-safe. Full numbers:
+docs/calibration.md section 8. Every decision in this ADR is now backed by a
+green re-run; the alpha-blind gate's replacement (RGB-only) passed four
+human-verified lit frames across two rentals without a false result.

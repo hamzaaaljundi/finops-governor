@@ -15,6 +15,12 @@ as a limitation in [docs/diversity-model.md](./docs/diversity-model.md) section 
 
 ![demo](demo/demo.gif)
 
+> **Real frames:** [demo/s4_governed_render.mp4](./demo/s4_governed_render.mp4) - the
+> gate trims its own demo job (120 -> 96, on camera), then the approved plan renders
+> on Isaac Sim (A10G, path-traced) via the emitted Replicator script. Session-4 arc:
+> [ADR 0011](./docs/adr/0011-session4a-adapter-regressions.md),
+> [calibration.md section 8](./docs/calibration.md).
+
 > _"50000 variations over ~16 declared configurations - expected ~100% redundant; est.
 > **$929.97** of spend adds little training value (effective **$58.14/distinct
 > configuration** vs $0.0093/image nominal); recoverable by trimming to 26 variations."_
@@ -166,7 +172,7 @@ per a pre-registered protocol with raw artifacts committed
 Eight releases, each consuming the previous milestone's guarantees - schema, cost gate,
 multi-axis governor, diversity gate, OpenUSD validity, planner, value-aware
 modification, orchestration, service, the plan-to-Replicator
-adapter, and measured render constants. 334 tests, ruff + mypy strict, CI across Python
+adapter, and measured render constants. 338 tests, ruff + mypy strict, CI across Python
 3.11-3.13. Design specs in [docs/](./docs/), decision records in
 [docs/adr/](./docs/adr/), the full arc in [ROADMAP.md](./ROADMAP.md).
 

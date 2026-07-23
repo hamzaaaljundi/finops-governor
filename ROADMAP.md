@@ -141,18 +141,24 @@ downstream model training; validating rendered output images.
   detection. New CLI mode (`--portfolio a.json b.json --portfolio-budget 500`). Full
   measurement and the rejected algorithm's numbers: docs/portfolio-model.md. 334 tests.
 
+- **Session 4 (a/c/d) - real-frames validation arc** (ADR 0011). 4a set out to
+  render the demo video and instead surfaced a threefold silent adapter regression
+  (modify signature, light type, camera aim) plus an alpha-blind pixel gate that
+  false-passed two all-black renders - fixed same-day, pinned with three adapter
+  tests, RGB-only Checkpoint 2.5, and a checksum-manifest guard against silent kit
+  regeneration (tests/test_frozen_kits.py). 4c re-ran everything lit and green:
+  **D1** 96 demo frames (assembled with the terminal-verdict clip into
+  demo/s4_governed_render.mp4); **D2** the 2x cost-corridor passed at **1.6%** on a
+  6x-asset scene (3.5329 vs 3.5897 predicted) - the model's scene-complexity
+  exclusion empirically vindicated; **D3** rasterize_factor triple-corroborated at
+  ~0.02, 0.03 retained fail-safe. 4d added stylized PBR demo assets (separate
+  assets_demo/ set; calibration assets untouched) and validated NVIDIA's cloud
+  Franka fetch (scale integration deferred). Session-3's ref constant was briefly
+  challenged by 4a's black-frame measurements and fully rehabilitated.
+  docs/calibration.md section 8. 338 tests.
+
 ### Remaining
 
-- **Session 4c: real-frames demo video + lit D2/D3 (short GPU session, ~45 min).**
-  Session 4a (2026-07-22) attempted these and instead surfaced a threefold silent
-  adapter regression (light type, camera aim, modify signature) plus an alpha-blind
-  pixel gate that false-passed two all-black renders - full postmortem in ADR 0011,
-  with fixes landed, three new adapter tests pinning the empirically proven forms,
-  an RGB-only Checkpoint 2.5, and a checksum-manifest guard against silent kit
-  regeneration. The deliverables themselves re-run in 4c on the fixed kit: demo
-  frames for the video (D1), the larger-scene calibration point (D2), and a lit
-  rasterize_factor measurement (D3). Session-3's `ref_render_seconds` was briefly
-  challenged by 4a's black-frame measurements and fully rehabilitated same-day.
 - **Cross-job redundancy (post-M10, ADR 0010 decision 6).** Two independent jobs
   whose declared randomization ranges overlap are currently allocated as if
   fully independent; detecting the overlap is a correlation-detection problem this
@@ -179,6 +185,7 @@ downstream model training; validating rendered output images.
 | `v1.0` | M8 | **Runnable, installable, served, demonstrated** |
 | `v1.1-calibrated` | M9 | Cost estimates hold against measured Isaac Sim data; the governed plan runs on the real stack |
 | `v1.2-portfolio` | M10 | One shared budget, N jobs - allocated by measured, near-optimal marginal value, not a naive heuristic |
+| `v1.3-validated` | Session 4 | The cost model holds against a 6x-heavier lit scene (1.6% off prediction); rasterize triple-corroborated; the governed plan renders on camera |
 
 The commit history tells the argument: deterministic spine first, headline innovation
 before the risky milestone, LLM last.
