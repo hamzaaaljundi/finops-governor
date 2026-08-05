@@ -1,5 +1,10 @@
 # FinOps Governor for Physical AI Synthetic Data Pipelines
 
+![CI](https://github.com/hamzaaaljundi/finops-governor/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)
+![License](https://img.shields.io/badge/license-Apache--2.0-green)
+![Tests](https://img.shields.io/badge/tests-338%20passing-brightgreen)
+
 **A deterministic pre-flight gate for synthetic-data GPU spend.** Before a single frame
 renders, it refuses jobs that are **over budget**, **geometrically invalid**, or
 **predictably redundant against their own declared randomization** - prices the waste in
