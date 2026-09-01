@@ -28,8 +28,12 @@ def main() -> None:
     d = gov.evaluate(red)
     assert d.energy and d.modified_energy and d.schedule
     print(f"verdict: {d.verdict.value}")
-    print(f"as-declared:   {d.energy.estimated_kwh:9.3f} kWh  {d.energy.estimated_gco2 / 1000:8.2f} kg CO2")
-    print(f"value-trimmed: {d.modified_energy.estimated_kwh:9.3f} kWh  {d.modified_energy.estimated_gco2 / 1000:8.2f} kg CO2")
+    print(
+        f"as-declared:   {d.energy.estimated_kwh:9.3f} kWh  {d.energy.estimated_gco2 / 1000:8.2f} kg CO2"
+    )
+    print(
+        f"value-trimmed: {d.modified_energy.estimated_kwh:9.3f} kWh  {d.modified_energy.estimated_gco2 / 1000:8.2f} kg CO2"
+    )
     print(
         f"AVOIDED by not rendering redundant frames: {d.kwh_avoided_by_trim:.3f} kWh, "
         f"{(d.gco2_avoided_by_trim or 0) / 1000:.2f} kg CO2"
@@ -44,8 +48,12 @@ def main() -> None:
     d2 = gov.evaluate(GenerationPlan.model_validate(data))
     assert d2.schedule and d2.energy
     s = d2.schedule
-    print(f"urgency: {s.urgency} | now: hour {d2.energy.hour_at_decision} @ {s.run_now_intensity:.0f} gCO2/kWh")
-    print(f"advice:  start hour {s.recommended_start_hour} @ {s.recommended_intensity:.0f} gCO2/kWh")
+    print(
+        f"urgency: {s.urgency} | now: hour {d2.energy.hour_at_decision} @ {s.run_now_intensity:.0f} gCO2/kWh"
+    )
+    print(
+        f"advice:  start hour {s.recommended_start_hour} @ {s.recommended_intensity:.0f} gCO2/kWh"
+    )
     print(f"projected saving if deferred: {s.projected_gco2_saved:.3f} g CO2  ({s.reason})")
 
     print()
