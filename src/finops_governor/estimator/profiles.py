@@ -40,6 +40,12 @@ class HardwareProfile(StrictModel):
     # measurement: r4 53.18s vs r1 38.46s on the A10G). Defaults to 0.0 for
     # profiles where it has not been measured; omitted from their JSON entries.
     annot_ingestion_extra_seconds: float = Field(0.0, ge=0)
+    # v2.0-energy: thermal design power (kW) and assumed utilization for the
+    # energy chain (docs/energy-model.md). Defaults keep pre-v2 profile files
+    # loadable; the shipped profiles carry real values (A10G 150W, T4 70W,
+    # H100 PCIe 350W - PCIe because that is the variant the price row prices).
+    tdp_kw: float = Field(0.3, gt=0)
+    default_utilization: float = Field(0.75, gt=0, le=1)
     contingency_factor: float = Field(..., ge=1)  # overhead never reduces cost
     vram_gb: int = Field(..., gt=0)
 

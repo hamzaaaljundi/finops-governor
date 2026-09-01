@@ -14,6 +14,7 @@ from enum import Enum
 
 from pydantic import Field, model_validator
 
+from finops_governor.energy import EnergyEstimate, ScheduleAdvice
 from finops_governor.estimator.estimate import CostEstimate
 from finops_governor.schemas import GenerationPlan
 from finops_governor.schemas.models import StrictModel
@@ -40,6 +41,16 @@ class GateDecision(StrictModel):
     modified_plan: GenerationPlan | None = None
     modified_estimate: CostEstimate | None = None
     modifications: list[str] = Field(default_factory=list)
+
+    # v2.0-energy (all optional; populated when the governor has an energy
+    # config): what this decision burns, guidance on when to run it, and - on
+    # MODIFY - the carbon the value-trim avoided by not rendering redundant
+    # frames (the v2 headline number).
+    energy: "EnergyEstimate | None" = None
+    modified_energy: "EnergyEstimate | None" = None
+    schedule: "ScheduleAdvice | None" = None
+    kwh_avoided_by_trim: float | None = None
+    gco2_avoided_by_trim: float | None = None
 
     @model_validator(mode="after")
     def _check_consistency(self) -> "GateDecision":

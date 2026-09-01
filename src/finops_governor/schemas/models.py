@@ -222,6 +222,13 @@ class GenerationPlan(StrictModel):
     render_settings: RenderSettings
     budget: Budget
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # v2.0-energy: carbon-aware urgency class (docs/energy-model.md section 2).
+    urgency: str = Field("standard", pattern="^(interactive|standard|deferrable)$")
+    # Reclassification audit trail: a planner may PROPOSE deferrable->interactive,
+    # but the gate BLOCKs it unless a human resubmits with approved_reclass=True
+    # (CLI: --approve-reclass). Deterministic, audit-visible in the saved plan.
+    urgency_reclassified_from: str | None = None
+    approved_reclass: bool = False
 
     @field_validator("modalities")
     @classmethod

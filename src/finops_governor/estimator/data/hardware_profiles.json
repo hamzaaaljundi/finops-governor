@@ -8,7 +8,9 @@
     "rasterize_factor": 0.03,
     "fixed_ingestion_seconds": 38.46,
     "contingency_factor": 1.15,
-    "vram_gb": 16
+    "vram_gb": 16,
+    "tdp_kw": 0.07,
+    "default_utilization": 0.75
   },
   "a10g": {
     "name": "NVIDIA A10G (AWS g5.xlarge)",
@@ -20,7 +22,9 @@
     "fixed_ingestion_seconds": 38.46,
     "annot_ingestion_extra_seconds": 14.72,
     "contingency_factor": 1.15,
-    "vram_gb": 24
+    "vram_gb": 24,
+    "tdp_kw": 0.15,
+    "default_utilization": 0.75
   },
   "h100": {
     "name": "NVIDIA H100 80GB (single-GPU on-demand, e.g. Lambda PCIe)",
@@ -31,6 +35,8 @@
     "rasterize_factor": 0.03,
     "fixed_ingestion_seconds": 38.46,
     "contingency_factor": 1.15,
-    "vram_gb": 80
+    "vram_gb": 80,
+    "tdp_kw": 0.35,
+    "default_utilization": 0.75
   }
 }

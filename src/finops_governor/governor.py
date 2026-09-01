@@ -19,6 +19,9 @@ signal, because now there is no alternative). Never cut signal while waste remai
 Precedence is unchanged (ADR 0005): BLOCKING dominates; warnings never decide.
 """
 
+from datetime import UTC
+
+from finops_governor.energy import IntensitySource
 from finops_governor.estimator.base import CostModel
 from finops_governor.estimator.estimate import CostEstimate
 from finops_governor.gate.decision import GateDecision, Verdict
@@ -44,9 +47,19 @@ class Governor:
         cost_model: CostModel,
         checks: list[ValidityCheck],
         modifier: PlanModifier,
+        intensity_source: "IntensitySource | None" = None,
+        energy_region: str = "us-east-1",
+        energy_hour: int | None = None,
     ) -> None:
         self._cost_model = cost_model
         self._checks = list(checks)
+        from finops_governor.energy import StaticIntensityCurves
+
+        self._intensity_source = (
+            intensity_source if intensity_source is not None else StaticIntensityCurves()
+        )
+        self._energy_region = energy_region
+        self._energy_hour = energy_hour
         self._modifier = modifier
 
     @classmethod
@@ -80,6 +93,75 @@ class Governor:
         )
 
     def evaluate(self, plan: GenerationPlan) -> GateDecision:
+        """Gate a plan; v2.0-energy enriches every decision with the energy chain."""
+        if (
+            plan.urgency == "interactive"
+            and plan.urgency_reclassified_from == "deferrable"
+            and not plan.approved_reclass
+        ):
+            # The governance story in one rule: a planner may PROPOSE promoting a
+            # deferrable job to interactive (skipping carbon deferral advice), but
+            # that promotion requires an explicit, audit-logged human approval
+            # (resubmit with approved_reclass=True / CLI --approve-reclass).
+            estimate = self._cost_model.estimate(plan)
+            return self._attach_energy(
+                GateDecision.block(
+                    plan.plan_id,
+                    estimate,
+                    plan.budget.max_usd,
+                    reason=(
+                        "[BLOCKING] energy_policy: urgency reclassification "
+                        "deferrable -> interactive requires human approval "
+                        "(resubmit with approved_reclass=true / --approve-reclass)."
+                    ),
+                ),
+                plan,
+            )
+        return self._attach_energy(self._evaluate_core(plan), plan)
+
+    def _attach_energy(self, decision: GateDecision, plan: GenerationPlan) -> GateDecision:
+        from datetime import datetime
+        from typing import cast
+
+        from finops_governor.energy import (
+            Urgency,
+            estimate_energy,
+            schedule_advice,
+            trim_carbon_avoided,
+        )
+
+        profile = getattr(self._cost_model, "profile", None)
+        if profile is None or self._intensity_source is None:
+            return decision
+        hour = self._energy_hour
+        if hour is None:
+            hour = datetime.now(UTC).hour
+        energy = estimate_energy(
+            decision.estimate, profile, self._intensity_source, self._energy_region, hour
+        )
+        update: dict = {"energy": energy}
+        if decision.modified_estimate is not None:
+            modified = estimate_energy(
+                decision.modified_estimate,
+                profile,
+                self._intensity_source,
+                self._energy_region,
+                hour,
+            )
+            kwh_avoided, gco2_avoided = trim_carbon_avoided(energy, modified)
+            update.update(
+                modified_energy=modified,
+                kwh_avoided_by_trim=kwh_avoided,
+                gco2_avoided_by_trim=gco2_avoided,
+            )
+            advice_basis = modified
+        else:
+            advice_basis = energy
+        urgency = cast(Urgency, plan.urgency)  # pattern-validated on the schema
+        update["schedule"] = schedule_advice(advice_basis, urgency, self._intensity_source)
+        return decision.model_copy(update=update)
+
+    def _evaluate_core(self, plan: GenerationPlan) -> GateDecision:
         estimate = self._cost_model.estimate(plan)
         context = CheckContext(plan=plan, cost_estimate=estimate)
 
