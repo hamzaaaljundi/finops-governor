@@ -2,13 +2,14 @@
 
 ![CI](https://github.com/hamzaaaljundi/finops-governor/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)
-![License](https://img.shields.io/badge/license-Apache--2.0-green)
-![Tests](https://img.shields.io/badge/tests-338%20passing-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Tests](https://img.shields.io/badge/tests-351%20passing-brightgreen)
 
 **A deterministic pre-flight gate for synthetic-data GPU spend.** Before a single frame
 renders, it refuses jobs that are **over budget**, **geometrically invalid**, or
 **predictably redundant against their own declared randomization** - prices the waste in
-dollars, and hands back the plan without it.
+dollars, and hands back the plan without it. Since v2, it also reports what a job
+**burns**: every trim carries a carbon receipt.
 
 The diversity axis measures **declared-parameter redundancy** (how much of a job's
 declared randomization space gets resampled given its variation count) - a real,
@@ -24,7 +25,8 @@ as a limitation in [docs/diversity-model.md](./docs/diversity-model.md) section 
 > gate trims its own demo job (120 -> 96, on camera), then the approved plan renders
 > on Isaac Sim (A10G, path-traced) via the emitted Replicator script. Session-4 arc:
 > [ADR 0011](./docs/adr/0011-session4a-adapter-regressions.md),
-> [calibration.md section 8](./docs/calibration.md).
+> [calibration.md section 8](./docs/calibration.md). Full arc with the carbon
+> receipt: [demo/s4_governed_render_v2.mp4](./demo/s4_governed_render_v2.mp4).
 
 > _"50000 variations over ~16 declared configurations - expected ~100% redundant; est.
 > **$929.97** of spend adds little training value (effective **$58.14/distinct
@@ -41,6 +43,7 @@ plan is recoverable, the gate builds the cheaper, coverage-preserving version it
 | Cost | Can we afford this? | Over-budget jobs; proposes a trimmed variant when recoverable |
 | Diversity | Is it worth it? | Predictably redundant spend - expected-coverage model, priced in dollars, trimmed away |
 | Geometry | Is the scene even valid? | Missing assets, assets through the floor, cameras aimed at nothing - on real OpenUSD stages |
+| Carbon (v2) | What does it burn, and when should it run? | Every trim carries a kWh/gCO2 receipt; low-carbon start windows by urgency; `deferrable -> interactive` promotions need a human |
 
 ## Install
 
@@ -128,6 +131,23 @@ rejected alternative, and v1 scope (single scene per job; no cross-job redundanc
 detection - both named, not discovered): [docs/portfolio-model.md](./docs/portfolio-model.md),
 [ADR 0010](./docs/adr/0010-portfolio-governance-scope.md).
 
+## Energy & carbon (v2.0-energy)
+
+Every decision now carries an energy estimate chained on the *calibrated* runtime
+term (not a guessed duration): kWh, gCO2 at the decision hour's grid intensity,
+and a recommended low-carbon start window by urgency class. The headline is not
+scheduling: **every MODIFY reports the carbon of the redundant frames it removed** -
+on the flagship redundant fixture, ~67 kg CO2 avoided per submission by not
+rendering data that adds no training value. Advice, not a queue (the gate governs
+approval, not execution); promoting `deferrable -> interactive` requires an
+audit-logged human approval. What's honestly hard - utilization and PUE are
+documented assumptions, average vs. marginal intensity, stated not solved:
+[docs/energy-model.md](./docs/energy-model.md).
+
+```bash
+python demo/energy_demo.py
+```
+
 ## How it works
 
 ```mermaid
@@ -141,6 +161,9 @@ flowchart TD
     E -->|block| H[Halt - governance success]
     G --> I[Audit Trail]
     H --> I
+    S[Intensity Source - static curves or live API] --> E
+    E --> K[Energy / carbon receipt - kWh, gCO2, schedule advice]
+    K --> I
 ```
 
 The **planner** turns natural language into a `GenerationPlan`, forced through a strict
@@ -162,7 +185,8 @@ bounded invariant.
 ## Scope
 
 **In scope:** NL -> structured plan; pre-execution cost estimate; a deterministic gate
-composing budget, diversity, and geometric-validity axes; hardware advisor; execution
+composing budget, diversity, and geometric-validity axes; hardware advisor;
+energy/carbon receipt and schedule advice; execution
 stub; audit trail; CLI + HTTP service.
 
 **Out of scope:** running large-scale generation (execution is stubbed - the
@@ -174,10 +198,11 @@ per a pre-registered protocol with raw artifacts committed
 
 ## The build
 
-Eight releases, each consuming the previous milestone's guarantees - schema, cost gate,
+Nine releases, each consuming the previous milestone's guarantees - schema, cost gate,
 multi-axis governor, diversity gate, OpenUSD validity, planner, value-aware
-modification, orchestration, service, the plan-to-Replicator
-adapter, and measured render constants. 338 tests, ruff + mypy strict, CI across Python
+modification, orchestration, service, the plan-to-Replicator adapter, measured and
+validated render constants, portfolio governance, and the energy/carbon layer.
+351 tests, ruff + mypy strict, CI across Python
 3.11-3.13. Design specs in [docs/](./docs/), decision records in
 [docs/adr/](./docs/adr/), the full arc in [ROADMAP.md](./ROADMAP.md).
 
