@@ -42,7 +42,7 @@ class AnthropicPlannerModel:
         response = self._client.messages.create(
             model=self.model,
             max_tokens=self.max_tokens,
-            temperature=self.temperature,
+            extra_body={"temperature": self.temperature},
             messages=[{"role": "user", "content": prompt}],
         )
         return "".join(block.text for block in response.content if block.type == "text")
